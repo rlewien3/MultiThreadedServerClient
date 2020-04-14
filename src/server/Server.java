@@ -5,7 +5,6 @@ package server;
 // Save file as Server.java 
   
 import java.io.*; 
-import java.util.*; 
 import java.net.*; 
   
 // Server class 
@@ -16,42 +15,48 @@ public class Server
 	private static final String ADD = "PUT";
 	private static final String REMOVE = "DEL";
 	
-    // Vector to store active clients 
-    static Vector<WorkerRunnable> ar = new Vector<>(); 
-    
     private static final int port = 1234;
-      
-    // counter for clients 
-    static int i = 0;
-  
-    public static void main(String[] args) throws IOException  
-    { 
-        // server is listening on port 1234 
-        ServerSocket ss = new ServerSocket(port); 
-          
-        Socket s; 
+     
+    public static void main(String[] args) throws IOException { 
+
+    	// create server socket if port isn't used
+        ServerSocket serverSocket = null;
+    	try {
+        	serverSocket = new ServerSocket(port); 
+        } catch (BindException be) {
+        	System.out.println("Port is already being used. Quitting.");
+        	System.exit(0);
+        }
         
+    	boolean serverRunning = true;
+        Socket clientSocket; 
         System.out.println("SERVER\nOn port: " + port + "\n");
           
-        // running infinite loop for getting 
-        // client request 
-        while (true) {
-            // Accept the incoming request 
-            s = ss.accept(); 
-  
-            System.out.println("New client request received : " + s); 
-              
-            // obtain input and output streams 
-            DataInputStream input = new DataInputStream(s.getInputStream()); 
-            DataOutputStream output = new DataOutputStream(s.getOutputStream()); 
-              
-            // Create a new handler object for handling this request. 
-            System.out.println("Creating a new handler for this client..."); 
-            WorkerRunnable worker = new WorkerRunnable(s, input, output); 
-  
-            // Create a new Thread with this object. 
-            Thread t = new Thread(worker); 
-            t.start(); 
-        } 
+        // running infinite loop for getting client request 
+        while (serverRunning) {
+            
+        	try {
+	        	// Accept the incoming request 
+	            clientSocket = serverSocket.accept();
+	            System.out.println("New client request received: " + clientSocket); 
+	            
+	            // Create a new handler object for handling this request. 
+	            WorkerRunnable worker = new WorkerRunnable(clientSocket); 
+	            Thread t = new Thread(worker);
+	            t.start();
+	            
+	            // End if called
+	            if (!serverRunning) {
+	            	System.out.println("Server closing.");
+	            	break;
+	            }
+	            
+        	} catch(IOException ioe) {
+        		System.out.println("Exception found on accept. Ignoring. Stack Trace:"); 
+                ioe.printStackTrace();
+        	}
+        }
+        
+        serverSocket.close();
     } 
 } 

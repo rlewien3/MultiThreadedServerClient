@@ -21,58 +21,82 @@ public class Client
     	System.out.println("CLIENT\nOn port: " + port + "\n");
     	
     	Scanner scn = new Scanner(System.in); 
+        InetAddress ip = InetAddress.getByName("localhost");
+        Socket socket = null;
+        
+        // connect to server if it's started
+        try {
+        	socket = new Socket(ip, port);
+        } catch (ConnectException ce) {
+        	System.out.println("Server not found at ip: " + ip + " port number: " + port);
+        	System.exit(0); 
+        }
           
-        // getting localhost ip 
-        InetAddress ip = InetAddress.getByName("localhost"); 
-          
-        // establish the connection
-        Socket socket = new Socket(ip, port);
-          
-        // obtaining input and out streams 
+        // obtaining input and out streams
         DataInputStream input = new DataInputStream(socket.getInputStream()); 
         DataOutputStream output = new DataOutputStream(socket.getOutputStream()); 
   
         // sendMessage thread
-        Thread sendMessage = new Thread(new Runnable()  
-        { 
-            @Override
+        Thread sendMessage = new Thread(new Runnable() { 
+            
+        	@Override
             public void run() { 
                 while (true) { 
   
-                    // read the message to deliver. 
-                    String msg = scn.nextLine(); 
-                      
+                	// Read input from user
+                    String msg = scn.nextLine();
+                    
+                    if (msg.equals("QUIT")) {
+                    	break;
+                    }
+                    
                     try { 
-                        // write on the output stream 
                         output.writeUTF(msg); 
                     } catch (IOException e) { 
                         e.printStackTrace(); 
-                    } 
-                } 
-            } 
-        }); 
+                    }
+                }
+                
+                try {
+                	scn.close();
+                	output.close();
+                	input.close();
+                } catch (IOException ioe) {
+                	System.out.println("Unable to close client socket.");
+                }
+            }
+        });
           
         // readMessage thread 
-        Thread readMessage = new Thread(new Runnable()  
-        { 
-            @Override
+        Thread readMessage = new Thread(new Runnable() { 
+            
+        	@Override
             public void run() { 
-  
-                while (true) { 
+                while (true) {
                     try { 
                         // read the message sent to this client 
                         String msg = input.readUTF(); 
-                        System.out.println(msg); 
-                    } catch (IOException e) { 
-  
+                        System.out.println("Response from Server: " + msg); 
+                    } catch (SocketException se) {
+                    	System.out.println("Server not available. CLosing Connection.");
+                    	break;
+                	} catch (IOException e) {
                         e.printStackTrace(); 
                     } 
                 } 
-            } 
+                
+                try {
+                	scn.close();
+                	output.close();
+                	input.close();
+                } catch (IOException ioe) {
+                	System.out.println("Unable to close client socket.");
+                }
+            }
         }); 
   
         sendMessage.start(); 
         readMessage.start(); 
   
-    } 
+    }
 } 

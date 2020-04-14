@@ -4,21 +4,29 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.Scanner;
 
 // ClientHandler class 
 class WorkerRunnable implements Runnable  
 { 
     Scanner scn = new Scanner(System.in); 
-    final DataInputStream input; 
-    final DataOutputStream output; 
-    Socket socket; 
+    private DataInputStream input; 
+    private DataOutputStream output; 
       
     // constructor 
-    public WorkerRunnable(Socket socket, DataInputStream input, DataOutputStream output) { 
-        this.input = input; 
-        this.output = output;
-        this.socket = socket; 
+    public WorkerRunnable(Socket clientSocket) { 
+        // obtain input and output streams 
+    	
+    	System.out.println("Creating a new handler for this client..."); 
+        
+		try {
+    		input = new DataInputStream(clientSocket.getInputStream()); 
+            output = new DataOutputStream(clientSocket.getOutputStream()); 
+    	} catch (IOException ioe) {
+    		System.out.println("Exception found on opening client input and output streams. Ignoring."); 
+            ioe.printStackTrace(); 
+    	}
     } 
   
     @Override
@@ -35,35 +43,25 @@ class WorkerRunnable implements Runnable
                   
                 System.out.println("Received: " + received); 
                   
-                /* break the string into message and recipient part 
-                StringTokenizer st = new StringTokenizer(received, " "); 
-                String MsgToSend = st.nextToken(); 
-                String recipient = st.nextToken();
-  
-                // search for the recipient in the connected devices list. 
-                // ar is the vector storing client of active users 
-                for (WorkerRunnable mc : Server.ar)  
-                {
-                    // if the recipient is found, write on its 
-                    // output stream 
-                    if (mc.name.equals(recipient) && mc.isloggedin==true)  
-                    { 
-                        mc.dos.writeUTF(this.name+" : " + MsgToSend); 
-                        break; 
-                    } 
-                } */
+                /* break the string into command and recipient part 
+                StringTokenizer str = new StringTokenizer(received, " "); 
+                String command = str.nextToken(); 
+                String data = str.nextToken();
+                */
                 
                 if (received.equals("QUIT")) {
+                	// end the connection
                 	break;
                 }
                 
-                output.writeUTF("Response from Server : Success!");
+                output.writeUTF("Success!");
                 
-            } catch (IOException e) { 
-                  
+        	} catch (SocketException se) {
+            	System.out.println("Client closed without quitting. Closing worker. ");
+            	break;
+            } catch (IOException e) {
                 e.printStackTrace(); 
-            } 
-              
+            }
         } 
         
         try { 
@@ -71,7 +69,8 @@ class WorkerRunnable implements Runnable
             this.input.close(); 
             this.output.close(); 
         } catch(IOException e) { 
-            e.printStackTrace(); 
-        } 
-    } 
-} 
+        	System.out.println("Error found stopping server socket"); 
+        	e.printStackTrace(); 
+        }
+    }
+}
