@@ -1,7 +1,9 @@
 package server;
 
 import java.io.*; 
-import java.net.*; 
+import java.net.*;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap; 
   
 /**
  * Multithreaded server
@@ -11,15 +13,11 @@ import java.net.*;
  * The University of Melbourne
  */
 public class Server { 
-    
-	// Communication protocol
-	private static final String QUERY = "GET";
-	private static final String ADD = "PUT";
-	private static final String REMOVE = "DEL";
-    
+   
 	private ServerSocket serverSocket = null;
 	private Socket clientSocket;
 	private boolean serverRunning = true;
+	private ConcurrentHashMap<String, List<Result>> dictionary;
 	
     public Server(int port) {
     	
@@ -33,6 +31,10 @@ public class Server {
         	System.out.println("ServerSocket was not able to be created. Quitting.");
         	System.exit(0);
         }
+    	
+    	DictFileReader reader = new DictFileReader();
+    	dictionary = reader.readDict();
+    	System.out.println(dictionary.keySet());
     	
     	delegateRequests();
     }
@@ -59,7 +61,7 @@ public class Server {
 	            System.out.println("New client request received: " + clientSocket); 
 	            
 	            // Create a new handler object for handling this request. 
-	            WorkerRunnable worker = new WorkerRunnable(clientSocket); 
+	            WorkerRunnable worker = new WorkerRunnable(clientSocket, dictionary); 
 	            Thread t = new Thread(worker);
 	            t.start();
 	            
