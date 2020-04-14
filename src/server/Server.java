@@ -1,38 +1,56 @@
 package server;
 
-// Java implementation of  Server side 
-// It contains two classes : Server and ClientHandler 
-// Save file as Server.java 
-  
 import java.io.*; 
 import java.net.*; 
   
-// Server class 
-public class Server  
-{ 
-    // Communication protocol
+/**
+ * Multithreaded server
+ * Created by Ryan Lewien
+ * 746528
+ * For Distributed Systems (COMP90015)
+ * The University of Melbourne
+ */
+public class Server { 
+    
+	// Communication protocol
 	private static final String QUERY = "GET";
 	private static final String ADD = "PUT";
 	private static final String REMOVE = "DEL";
+    
+	private ServerSocket serverSocket = null;
+	private Socket clientSocket;
+	private boolean serverRunning = true;
 	
-    private static final int port = 1234;
-     
-    public static void main(String[] args) throws IOException { 
-
+    public Server(int port) {
+    	
     	// create server socket if port isn't used
-        ServerSocket serverSocket = null;
     	try {
         	serverSocket = new ServerSocket(port); 
         } catch (BindException be) {
         	System.out.println("Port is already being used. Quitting.");
         	System.exit(0);
+        } catch (IOException ioe) {
+        	System.out.println("ServerSocket was not able to be created. Quitting.");
+        	System.exit(0);
         }
-        
-    	boolean serverRunning = true;
-        Socket clientSocket; 
-        System.out.println("SERVER\nOn port: " + port + "\n");
-          
-        // running infinite loop for getting client request 
+    	
+    	delegateRequests();
+    }
+    
+    
+    public static void main(String[] args) throws IOException { 
+
+    	final int port = 1234;
+    	System.out.println("SERVER\nOn port: " + port + "\n");
+    	Server server = new Server(port);
+    } 
+    
+    
+    /**
+     * Delegates requests to worker threads.
+     */
+    public void delegateRequests() {
+    	// running infinite loop for getting client request 
         while (serverRunning) {
             
         	try {
@@ -57,6 +75,11 @@ public class Server
         	}
         }
         
-        serverSocket.close();
-    } 
+        try {
+			serverSocket.close();
+		} catch (IOException e) {
+			System.out.println("Unable to close ServerSocket.");
+			e.printStackTrace();
+		}
+    }
 } 

@@ -1,42 +1,75 @@
 package client;
 
-// Java implementation for multithreaded chat client 
-// Save file as Client.java 
-  
 import java.io.*; 
 import java.net.*; 
 import java.util.Scanner; 
-  
-public class Client  
-{ 
+ 
+/**
+ * Multithreaded client
+ * Created by Ryan Lewien
+ * 746528
+ * For Distributed Systems (COMP90015)
+ * The University of Melbourne
+ */
+public class Client { 
+	
 	// Communication protocol
 	private static final String QUERY = "GET";
 	private static final String ADD = "PUT";
 	private static final String REMOVE = "DEL";
 	
-	final static int port = 1234;
-  
-    public static void main(String args[]) throws UnknownHostException, IOException  
-    { 
-    	System.out.println("CLIENT\nOn port: " + port + "\n");
-    	
-    	Scanner scn = new Scanner(System.in); 
-        InetAddress ip = InetAddress.getByName("localhost");
-        Socket socket = null;
+    private InetAddress ip = null;
+    private Socket socket = null;
+    
+    private DataInputStream input; 
+    private DataOutputStream output;
+	
+	public Client(int port) {
+		
+		try {
+			ip = InetAddress.getByName("localhost");
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		}
         
         // connect to server if it's started
         try {
         	socket = new Socket(ip, port);
-        } catch (ConnectException ce) {
-        	System.out.println("Server not found at ip: " + ip + " port number: " + port);
+        } catch (IOException ce) {
+        	System.out.println("Server not able to connect to ip: " + ip + " port number: " + port);
+        	ce.printStackTrace();
         	System.exit(0); 
         }
-          
+        
         // obtaining input and out streams
-        DataInputStream input = new DataInputStream(socket.getInputStream()); 
-        DataOutputStream output = new DataOutputStream(socket.getOutputStream()); 
+        try {
+			input = new DataInputStream(socket.getInputStream());
+			output = new DataOutputStream(socket.getOutputStream());
+		} catch (IOException e) {
+			System.out.println("Unable to connect to input and output streams.");
+			e.printStackTrace();
+			System.exit(0); 
+		}
+         
+        // send and receive messages
+        sendMessages();
+        readMessages();
+    }
+	
   
-        // sendMessage thread
+    public static void main(String args[]) throws UnknownHostException, IOException { 
+    	
+    	final int port = 1234;
+    	System.out.println("CLIENT\nOn port: " + port + "\n");
+    	Client client = new Client(port);
+    }
+    
+    /**
+     * Sends messages to output
+     */
+    private void sendMessages() {
+    	Scanner scn = new Scanner(System.in); 
+    	
         Thread sendMessage = new Thread(new Runnable() { 
             
         	@Override
@@ -66,8 +99,14 @@ public class Client
                 }
             }
         });
-          
-        // readMessage thread 
+        
+        sendMessage.start(); 
+    }
+    
+    /**
+     * Reads messages from input
+     */
+    private void readMessages () {
         Thread readMessage = new Thread(new Runnable() { 
             
         	@Override
@@ -86,17 +125,14 @@ public class Client
                 } 
                 
                 try {
-                	scn.close();
                 	output.close();
                 	input.close();
                 } catch (IOException ioe) {
                 	System.out.println("Unable to close client socket.");
                 }
             }
-        }); 
-  
-        sendMessage.start(); 
+        });
+        
         readMessage.start(); 
-  
     }
-} 
+}

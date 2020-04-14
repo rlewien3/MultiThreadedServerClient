@@ -7,10 +7,16 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.Scanner;
 
-// ClientHandler class 
-class WorkerRunnable implements Runnable  
-{ 
-    Scanner scn = new Scanner(System.in); 
+/**
+ * Worker thread for a multithreaded server
+ * Created by Ryan Lewien
+ * 746528
+ * For Distributed Systems (COMP90015)
+ * The University of Melbourne
+ */
+class WorkerRunnable implements Runnable { 
+    
+	Scanner scn = new Scanner(System.in); 
     private DataInputStream input; 
     private DataOutputStream output; 
       
