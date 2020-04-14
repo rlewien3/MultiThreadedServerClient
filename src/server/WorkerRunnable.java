@@ -104,6 +104,8 @@ class WorkerRunnable implements Runnable {
                         		reply = "Dictionary already contains the word " + word;
                         	} else {
                         		
+                        		// inputting multiple definitions at once?
+                        		
                         		Result newResult = new Result();
                         		newResult.setDefinition(definition);
                         		

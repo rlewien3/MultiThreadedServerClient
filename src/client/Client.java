@@ -27,7 +27,7 @@ public class Client {
 	public Client(int port) {
 		
 		try {
-			ip = InetAddress.getByName("localhost");
+			ip = InetAddress.getByName("127.0.0.1");
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}

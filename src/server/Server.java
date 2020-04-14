@@ -21,9 +21,17 @@ public class Server {
 	
     public Server(int port) {
     	
+    	InetAddress ip = null;
+		try {
+			ip = InetAddress.getByName("127.0.0.1");
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+			System.exit(0);
+		}
+    	
     	// create server socket if port isn't used
     	try {
-        	serverSocket = new ServerSocket(port); 
+        	serverSocket = new ServerSocket(port, 100, ip); 
         } catch (BindException be) {
         	System.out.println("Port is already being used. Quitting.");
         	System.exit(0);
@@ -34,7 +42,6 @@ public class Server {
     	
     	DictFileReader reader = new DictFileReader();
     	dictionary = reader.readDict();
-    	System.out.println(dictionary.keySet());
     	
     	delegateRequests();
     }
@@ -60,7 +67,7 @@ public class Server {
 	            clientSocket = serverSocket.accept();
 	            System.out.println("New client request received: " + clientSocket); 
 	            
-	            // Create a new handler object for handling this request. 
+	            // Create a new handler object for handling this request. **TODO: Implement worker pool
 	            WorkerRunnable worker = new WorkerRunnable(clientSocket, dictionary); 
 	            Thread t = new Thread(worker);
 	            t.start();
