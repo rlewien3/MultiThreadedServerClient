@@ -11,7 +11,11 @@ import java.net.*;
 // Server class 
 public class Server  
 { 
-  
+    // Communication protocol
+	private static final String QUERY = "GET";
+	private static final String ADD = "PUT";
+	private static final String REMOVE = "DEL";
+	
     // Vector to store active clients 
     static Vector<WorkerRunnable> ar = new Vector<>(); 
     
@@ -31,8 +35,7 @@ public class Server
           
         // running infinite loop for getting 
         // client request 
-        while (true)  
-        { 
+        while (true) {
             // Accept the incoming request 
             s = ss.accept(); 
   
@@ -42,26 +45,13 @@ public class Server
             DataInputStream input = new DataInputStream(s.getInputStream()); 
             DataOutputStream output = new DataOutputStream(s.getOutputStream()); 
               
-            System.out.println("Creating a new handler for this client..."); 
-  
             // Create a new handler object for handling this request. 
+            System.out.println("Creating a new handler for this client..."); 
             WorkerRunnable worker = new WorkerRunnable(s, input, output); 
   
             // Create a new Thread with this object. 
             Thread t = new Thread(worker); 
-              
-            System.out.println("Adding this client to active client list"); 
-  
-            // add this client to active clients list 
-            ar.add(worker); 
-  
-            // start the thread. 
             t.start(); 
-  
-            // increment i for new client. 
-            // i is used for naming only, and can be replaced 
-            // by any naming scheme 
-            i++; 
         } 
     } 
 } 

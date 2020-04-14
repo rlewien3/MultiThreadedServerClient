@@ -9,7 +9,12 @@ import java.util.Scanner;
   
 public class Client  
 { 
-    final static int port = 1234; 
+	// Communication protocol
+	private static final String QUERY = "GET";
+	private static final String ADD = "PUT";
+	private static final String REMOVE = "DEL";
+	
+	final static int port = 1234;
   
     public static void main(String args[]) throws UnknownHostException, IOException  
     { 
@@ -20,8 +25,8 @@ public class Client
         // getting localhost ip 
         InetAddress ip = InetAddress.getByName("localhost"); 
           
-        // establish the connection 
-        Socket socket = new Socket(ip, port); 
+        // establish the connection
+        Socket socket = new Socket(ip, port);
           
         // obtaining input and out streams 
         DataInputStream input = new DataInputStream(socket.getInputStream()); 
