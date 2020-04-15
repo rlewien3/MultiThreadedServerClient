@@ -11,7 +11,7 @@ import java.util.Scanner;
  * For Distributed Systems (COMP90015)
  * The University of Melbourne
  */
-public class Client { 
+public class Client implements Runnable { 
 	
 	// Communication protocol
 	private static final String QUERY = "GET";
@@ -20,16 +20,51 @@ public class Client {
 	
     private InetAddress ip = null;
     private Socket socket = null;
+    private boolean clientRunning = false;
     
     private DataInputStream input; 
     private DataOutputStream output;
+    
+    private int port;
+    private String ipAddress;
 	
-	public Client(int port) {
+	public Client(int port, String ipAddress) {
 		
-		try {
-			ip = InetAddress.getByName("127.0.0.1");
+		this.port = port;
+		this.ipAddress = ipAddress;
+    }
+	
+  
+    public static void main(String args[]) throws UnknownHostException, IOException { 
+    	
+    	final int port = 1234;
+    	final String ipAddress = "127.0.0.1";
+    	
+    	System.out.println("CLIENT\nOn port: " + port + "\n");
+    	Client client = new Client(port, ipAddress);
+    	client.run();
+    }
+    
+    @Override
+    public void run() {
+    	clientRunning = true;
+    	connectToServer();
+    	sendMessages();
+        readMessages();
+    }
+    
+    /**
+     * Connects the client to the server
+     */
+    private void connectToServer() {
+    	
+    	// get the ip
+    	try {
+			ip = InetAddress.getByName(ipAddress);
 		} catch (UnknownHostException e) {
+			System.out.println("IP Address not found.");
 			e.printStackTrace();
+			System.exit(0);
 		}
         
         // connect to server if it's started
@@ -41,27 +76,15 @@ public class Client {
         	System.exit(0); 
         }
         
-        // obtaining input and out streams
+        // obtain input and output streams
         try {
 			input = new DataInputStream(socket.getInputStream());
 			output = new DataOutputStream(socket.getOutputStream());
 		} catch (IOException e) {
 			System.out.println("Unable to connect to input and output streams.");
 			e.printStackTrace();
-			System.exit(0); 
+			stop();
 		}
-         
-        // send and receive messages
-        sendMessages();
-        readMessages();
-    }
-	
-  
-    public static void main(String args[]) throws UnknownHostException, IOException { 
-    	
-    	final int port = 1234;
-    	System.out.println("CLIENT\nOn port: " + port + "\n");
-    	Client client = new Client(port);
     }
     
     /**
@@ -74,7 +97,7 @@ public class Client {
             
         	@Override
             public void run() { 
-                while (true) { 
+                while (isRunning()) { 
   
                 	// Read input from user
                     String msg = scn.nextLine();
@@ -90,17 +113,13 @@ public class Client {
                     }
                 }
                 
-                try {
-                	scn.close();
-                	output.close();
-                	input.close();
-                } catch (IOException ioe) {
-                	System.out.println("Unable to close client socket.");
-                }
+                // Closing the client
+                scn.close();
+                stop();
             }
         });
         
-        sendMessage.start(); 
+        sendMessage.start();
     }
     
     /**
@@ -111,7 +130,7 @@ public class Client {
             
         	@Override
             public void run() { 
-                while (true) {
+                while (isRunning()) {
                     try { 
                         // read the message sent to this client 
                         String msg = input.readUTF(); 
@@ -124,15 +143,33 @@ public class Client {
                     } 
                 } 
                 
-                try {
-                	output.close();
-                	input.close();
-                } catch (IOException ioe) {
-                	System.out.println("Unable to close client socket.");
-                }
+                stop();
             }
         });
         
         readMessage.start(); 
+    }
+    
+    /**
+     * Checks if server is running
+     */
+    public synchronized boolean isRunning() {
+    	return clientRunning;
+    }
+    
+    /**
+     * Stops the client
+     */
+    public synchronized void stop() {
+    	if (clientRunning) {
+    		clientRunning = false;
+        	try {
+        		socket.close();
+        	} catch (IOException e) {
+        		System.out.println("Error closing client");
+        	}
+    	}
+    	System.out.println("Client stopped.");
+    	System.exit(0); 
     }
 }

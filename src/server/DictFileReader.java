@@ -2,19 +2,25 @@ package server;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.alibaba.fastjson.*;
 import org.apache.commons.io.FileUtils;
 
+
+/**
+ * Reads a JSON file of english definitions into a workable dictionary object
+ * Created by Ryan Lewien
+ * 746528
+ * For Distributed Systems (COMP90015)
+ * The University of Melbourne
+ * Words obtained from https://www.wordsapi.com/
+ */
 public class DictFileReader {
 	
-	public ConcurrentHashMap<String, List<Result>> readDict() { //ConcurrentHashMap<String, String>
+	public ConcurrentHashMap<String, List<Result>> readDict(String dataPath) { //ConcurrentHashMap<String, String>
 		
-		String dataPath = "C:\\Users\\rlewi\\Documents\\MultiThreadedServerClient\\src\\server\\data.json";
 		File dataFile = FileUtils.getFile(dataPath);
 		
 		String str = null;

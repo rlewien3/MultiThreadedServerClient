@@ -33,12 +33,12 @@ class WorkerRunnable implements Runnable {
     private DataInputStream input; 
     private DataOutputStream output; 
     
-    ConcurrentHashMap<String, List<Result>> dictionary;
+    private Server server;
       
     // constructor 
-    public WorkerRunnable(Socket clientSocket, ConcurrentHashMap<String, List<Result>> dictionary) { 
+    public WorkerRunnable(Socket clientSocket, Server server) { 
         
-    	this.dictionary = dictionary;
+    	this.server = server;
     	
     	System.out.println("Creating a new handler for this client..."); 
         
@@ -58,7 +58,7 @@ class WorkerRunnable implements Runnable {
     	System.out.println("New worker running!");
     	
         String received; 
-        while (true) { 
+        while (server.isRunning()) { 
             
         	try { 
                 // receive the string 
@@ -83,8 +83,8 @@ class WorkerRunnable implements Runnable {
                     if (command.equals(QUERY)) {
                     	
                     	System.out.println("Looking for " + message + " in dictionary...");
-                    	if (dictionary.containsKey(message)) {
-                    		reply = dictionary.get(message).toString();
+                    	if (server.getDictionary().containsKey(message)) {
+                    		reply = server.getDictionary().get(message).toString();
                     	} else {
                     		reply = "Word not found.";
                     	}
@@ -99,7 +99,7 @@ class WorkerRunnable implements Runnable {
                     		String word = splitMessage[0];
                             String definition = splitMessage[1];
                         	
-                        	if (dictionary.containsKey(word)) {
+                        	if (server.getDictionary().containsKey(word)) {
                         		// add definition to word?
                         		reply = "Dictionary already contains the word " + word;
                         	} else {
@@ -112,7 +112,7 @@ class WorkerRunnable implements Runnable {
                         		List<Result> newResults = new ArrayList<Result>(1);
                         		newResults.add(newResult);
                         		
-                        		dictionary.put(word, newResults);
+                        		server.getDictionary().put(word, newResults);
                         		reply = word + " successfully added to the dictionary!";
                         	}
                     	} else {
@@ -123,10 +123,10 @@ class WorkerRunnable implements Runnable {
                     
                     // handle removals
                     else if (command.equals(REMOVE)) {
-                    	if (!dictionary.containsKey(message)) {
+                    	if (!server.getDictionary().containsKey(message)) {
                     		reply = "Dictionary does not contain the word " + message;
                     	} else {
-                    		dictionary.remove(message);
+                    		server.getDictionary().remove(message);
                     		reply = message + " successfully removed to the dictionary!";
                     	}
                     	
