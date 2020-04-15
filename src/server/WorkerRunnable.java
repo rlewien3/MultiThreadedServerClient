@@ -3,6 +3,7 @@ package server;
 import java.io.DataInputStream;
 
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
@@ -55,106 +56,113 @@ class WorkerRunnable implements Runnable {
     @Override
     public void run() { 
   
-    	System.out.println("New worker running!");
+    	while (true) {
+	    	System.out.println("New worker running!");
+	        String received; 
+	
+	        // receive the string 
+	    	try { 
+	            received = input.readUTF(); 
+	            System.out.println("Received: " + received);
+	    	} catch (SocketException se) {
+	        	System.out.println("Client closed without quitting. Closing worker. ");
+	        	return;
+	    	} catch (EOFException eofe) {
+	    		System.out.println("Worker forced to close.");
+	        	return;
+	    	} catch (IOException e) {
+	            e.printStackTrace();
+	            return;
+	        }
+	        
+	    	// close server
+	        if (received.equals("QUIT")) {
+	        	server.stop();
+	        	break;
+	        }
+	        
+	        String reply = null;
+	        
+	        // break the string into command and recipient part
+	        String[] splitReceived = received.split(" ", 2);
+	        if (splitReceived.length == 2) {
+	        	
+	        	String command = splitReceived[0];
+	            String message = splitReceived[1].toLowerCase();
+	            
+	            // handle queries
+	            if (command.equals(QUERY)) {
+	            	reply = queryWord(message);
+	            }
+	            
+	            // handle additions
+	            else if (command.equals(ADD)) {
+	            	reply = addWord(message);
+	            }
+	            
+	            // handle removals
+	            else if (command.equals(REMOVE)) {
+	            	reply = removeWord(message);
+	            	
+	            } else {
+	            	reply = "Invalid query! " + PROTOCOL_INSTRUCTIONS;
+	            }
+	        } else {
+	        	reply = "Invalid query! " + PROTOCOL_INSTRUCTIONS; 
+	        }
+	        
+	        // Send reply
+	        try {
+				output.writeUTF(reply);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+    	}
+    }
+    
+    public String queryWord(String word) {
+    	System.out.println("Looking for " + word + " in dictionary...");
+    	if (server.getDictionary().containsKey(word)) {
+    		return server.getDictionary().get(word).toString();
+    	} else {
+    		return "Word not found.";
+    	}
+    }
+    
+    public String addWord(String message) {
+    	String[] splitMessage = message.split("~~~", 2);
     	
-        String received; 
-        while (server.isRunning()) { 
-            
-        	try { 
-                // receive the string 
-                received = input.readUTF(); 
-                System.out.println("Received: " + received);
-                
-                if (received.equals("QUIT")) {
-                	// end the connection
-                	break;
-                }
-                
-                String reply = null;
-                
-                // break the string into command and recipient part 
-                String[] splitReceived = received.split(" ", 2);
-                if (splitReceived.length == 2) {
-                	
-                	String command = splitReceived[0];
-                    String message = splitReceived[1].toLowerCase();
-                    
-                    // handle queries
-                    if (command.equals(QUERY)) {
-                    	
-                    	System.out.println("Looking for " + message + " in dictionary...");
-                    	if (server.getDictionary().containsKey(message)) {
-                    		reply = server.getDictionary().get(message).toString();
-                    	} else {
-                    		reply = "Word not found.";
-                    	}
-                    }
-                    
-                    // handle additions
-                    else if (command.equals(ADD)) {
-                    	
-                    	String[] splitMessage = message.split("~~~", 2);
-                    	
-                    	if (splitMessage.length == 2) {
-                    		String word = splitMessage[0];
-                            String definition = splitMessage[1];
-                        	
-                        	if (server.getDictionary().containsKey(word)) {
-                        		// add definition to word?
-                        		reply = "Dictionary already contains the word " + word;
-                        	} else {
-                        		
-                        		// inputting multiple definitions at once?
-                        		
-                        		Result newResult = new Result();
-                        		newResult.setDefinition(definition);
-                        		
-                        		List<Result> newResults = new ArrayList<Result>(1);
-                        		newResults.add(newResult);
-                        		
-                        		server.getDictionary().put(word, newResults);
-                        		reply = word + " successfully added to the dictionary!";
-                        	}
-                    	} else {
-                    		reply = "Invalid adding query! " + ADD_PROTOCOL_INSTRUCTIONS;
-                    	}
-                        
-                    }
-                    
-                    // handle removals
-                    else if (command.equals(REMOVE)) {
-                    	if (!server.getDictionary().containsKey(message)) {
-                    		reply = "Dictionary does not contain the word " + message;
-                    	} else {
-                    		server.getDictionary().remove(message);
-                    		reply = message + " successfully removed to the dictionary!";
-                    	}
-                    	
-                    } else {
-                    	reply = "Invalid query! " + PROTOCOL_INSTRUCTIONS;
-                    }
-                } else {
-                	reply = "Invalid query! " + PROTOCOL_INSTRUCTIONS; 
-                }
-                
-                // Send reply
-                output.writeUTF(reply);
-                
-        	} catch (SocketException se) {
-            	System.out.println("Client closed without quitting. Closing worker. ");
-            	break;
-            } catch (IOException e) {
-                e.printStackTrace(); 
-            }
-        } 
-        
-        try { 
-            // closing resources 
-            this.input.close(); 
-            this.output.close(); 
-        } catch(IOException e) { 
-        	System.out.println("Error found stopping server socket"); 
-        	e.printStackTrace(); 
-        }
+    	if (splitMessage.length == 2) {
+    		String word = splitMessage[0];
+            String definition = splitMessage[1];
+        	
+        	if (server.getDictionary().containsKey(word)) {
+        		// add definition to word?
+        		return "Dictionary already contains the word " + word;
+        	} else {
+        		
+        		// inputting multiple definitions at once?
+        		
+        		Result newResult = new Result();
+        		newResult.setDefinition(definition);
+        		
+        		List<Result> newResults = new ArrayList<Result>(1);
+        		newResults.add(newResult);
+        		
+        		server.getDictionary().put(word, newResults);
+        		return word + " successfully added to the dictionary!";
+        	}
+    	} else {
+    		return "Invalid adding query! " + ADD_PROTOCOL_INSTRUCTIONS;
+    	}
+    }
+    
+    public String removeWord(String word) {
+    	if (!server.getDictionary().containsKey(word)) {
+    		return "Dictionary does not contain the word " + word;
+    	} else {
+    		server.getDictionary().remove(word);
+    		return word + " successfully removed to the dictionary!";
+    	}
     }
 }

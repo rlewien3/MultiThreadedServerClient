@@ -16,21 +16,22 @@ import java.util.concurrent.Executors;
  */
 public class Server implements Runnable { 
    
+	private final int poolSize = 3;
+	private final String dictLocation = "C:\\Users\\rlewi\\Documents\\MultiThreadedServerClient\\src\\server\\data.json";
+	private int port;
+	private String ipAddress;
+	
 	private ServerSocket serverSocket = null;
 	private Socket clientSocket;
 	private boolean serverRunning = false;
 	private ConcurrentHashMap<String, List<Result>> dictionary;
-	protected ExecutorService workerThreads = Executors.newFixedThreadPool(10);
-	
-	private int port;
-	private String ipAddress;
-	
+	protected ExecutorService workerThreads = Executors.newFixedThreadPool(poolSize);
 	
     public Server(int port, String ipAddress) {
     	
     	// Read in dictionary
     	DictFileReader reader = new DictFileReader();
-    	dictionary = reader.readDict("C:\\Users\\rlewi\\Documents\\MultiThreadedServerClient\\src\\server\\data.json");
+    	dictionary = reader.readDict(dictLocation);
     	
     	this.port = port;
     	this.ipAddress = ipAddress;
