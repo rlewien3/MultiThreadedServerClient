@@ -1,5 +1,6 @@
 package client;
 
+import java.awt.EventQueue;
 import java.io.*; 
 import java.net.*; 
 import java.util.Scanner; 
@@ -40,8 +41,13 @@ public class Client implements Runnable {
     	final int port = 1234;
     	final String ipAddress = "127.0.0.1";
     	
-    	System.out.println("CLIENT\nOn port: " + port + "\n");
+    	// Start GUI
     	Client client = new Client(port, ipAddress);
+    	ClientView clientView = new ClientView(client);
+    	clientView.run();
+    	
+    	// Start Client behaviour
+    	System.out.println("CLIENT\nOn port: " + port + "\n");
     	client.run();
     }
     
