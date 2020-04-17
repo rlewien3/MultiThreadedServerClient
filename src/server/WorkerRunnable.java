@@ -24,12 +24,17 @@ import java.util.concurrent.ConcurrentHashMap;
 class WorkerRunnable implements Runnable { 
     
 	// Communication protocol
+	// client side
 	private static final String QUERY = "GET";
 	private static final String ADD = "PUT";
 	private static final String REMOVE = "DEL";
-	private static final String SEPARATOR = "GB&^IR%&*"; // to separate two arguments in an add query
+	private static final String SEPARATOR = "~~~"; // to separate two arguments in an add query
 	private static final String PROTOCOL_INSTRUCTIONS = "Begin with either " + QUERY + ", " + ADD + " or " + REMOVE + " and then follow with your word/ definition. ";
 	private static final String ADD_PROTOCOL_INSTRUCTIONS = "The correct form is <word>" + SEPARATOR + "<new definition>.";
+	// server side
+	private static final String ERROR = "ERR ";
+	private static final String SUCCESS = "OK ";
+	private static final String QUERY_RESPONSE = "RES ";
 	
 	Scanner scn = new Scanner(System.in); 
     private DataInputStream input; 
@@ -106,40 +111,44 @@ class WorkerRunnable implements Runnable {
 	            	reply = removeWord(message);
 	            	
 	            } else {
-	            	reply = "Invalid query! " + PROTOCOL_INSTRUCTIONS;
+	            	reply = ERROR + "Invalid query! " + PROTOCOL_INSTRUCTIONS;
 	            }
 	        } else {
-	        	reply = "Invalid query! " + PROTOCOL_INSTRUCTIONS; 
+	        	reply = ERROR + "Invalid query! " + PROTOCOL_INSTRUCTIONS; 
 	        }
 	        
 	        // Send reply
 	        try {
 				output.writeUTF(reply);
 			} catch (IOException e) {
+				System.out.println("Failed to write to output stream. Ignoring. ");
 				e.printStackTrace();
 			}
     	}
     }
     
-    public String queryWord(String word) {
+    private String queryWord(String word) {
     	System.out.println("Looking for " + word + " in dictionary...");
     	if (server.getDictionary().containsKey(word)) {
-    		return server.getDictionary().get(word).toString();
+    		return QUERY_RESPONSE + server.getDictionary().get(word).toString();
     	} else {
-    		return "Word not found.";
+    		return ERROR + "Word not found in the dictionary.";
     	}
     }
     
-    public String addWord(String message) {
-    	String[] splitMessage = message.split("~~~", 2);
+    private String addWord(String message) {
+    	String[] splitMessage = message.split(SEPARATOR, 2);
     	
     	if (splitMessage.length == 2) {
     		String word = splitMessage[0];
             String definition = splitMessage[1];
+            
+            System.out.println("word: " + word);
+            System.out.println("definition: " + definition);
         	
         	if (server.getDictionary().containsKey(word)) {
         		// add definition to word?
-        		return "Dictionary already contains the word " + word;
+        		return ERROR + "Dictionary already contains the word " + word;
         	} else {
         		
         		// inputting multiple definitions at once?
@@ -151,19 +160,19 @@ class WorkerRunnable implements Runnable {
         		newResults.add(newResult);
         		
         		server.getDictionary().put(word, newResults);
-        		return word + " successfully added to the dictionary!";
+        		return SUCCESS + word + " successfully added to the dictionary!";
         	}
     	} else {
-    		return "Invalid adding query! " + ADD_PROTOCOL_INSTRUCTIONS;
+    		return ERROR + "Invalid adding query! " + ADD_PROTOCOL_INSTRUCTIONS;
     	}
     }
     
-    public String removeWord(String word) {
+    private String removeWord(String word) {
     	if (!server.getDictionary().containsKey(word)) {
-    		return "Dictionary does not contain the word " + word;
+    		return ERROR + "Dictionary does not contain the word " + word;
     	} else {
     		server.getDictionary().remove(word);
-    		return word + " successfully removed to the dictionary!";
+    		return SUCCESS + word + " successfully removed to the dictionary!";
     	}
     }
 }

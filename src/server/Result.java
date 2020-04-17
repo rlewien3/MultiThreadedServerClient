@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import com.alibaba.fastjson.JSON;
+
 public class Result {
 
 	private String definition;
@@ -41,13 +43,6 @@ public class Result {
 	public void setExamples(List<String> examples) { this.examples = examples; }
 	
 	public String toString() {
-		return "Definition: " + definition + 
-				"\nPart of Speech: " + partOfSpeech + 
-				"\nSynonyms: " + synonyms.toString() +
-				"\nTypeOf: " + typeOf.toString() +
-				"\nHasTypes: " + hasTypes.toString() +
-				"\nDerivation: " + derivation.toString() +
-				"\nExamples: " + examples.toString() + 
-				"\n\n";
+		return JSON.toJSONString(this);
 	}
 }

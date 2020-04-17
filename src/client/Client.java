@@ -1,9 +1,12 @@
 package client;
 
-import java.awt.EventQueue;
 import java.io.*; 
-import java.net.*; 
-import java.util.Scanner; 
+import java.net.*;
+import java.util.List;
+
+import com.alibaba.fastjson.JSON;
+
+import server.Result; 
  
 /**
  * Multithreaded client
@@ -15,10 +18,15 @@ import java.util.Scanner;
 public class Client implements Runnable { 
 	
 	// Communication protocol
-	private static final String QUERY = "GET";
-	private static final String ADD = "PUT";
-	private static final String REMOVE = "DEL";
-	private static final String SEPARATOR = "GB&^IR%&*"; // to separate two arguments in an add query
+	// client side
+	private static final String QUERY = "GET ";
+	private static final String ADD = "PUT ";
+	private static final String REMOVE = "DEL ";
+	private static final String SEPARATOR = "~~~"; // to separate two arguments in an add query
+	// server side
+	private static final String ERROR = "ERR";
+	private static final String SUCCESS = "OK";
+	private static final String QUERY_RESPONSE = "RES";
 	
 	private ClientView view;
 	
@@ -36,15 +44,14 @@ public class Client implements Runnable {
 		
 		this.port = port;
 		this.ipAddress = ipAddress;
-		
-		// Start GUI
+
 		view = new ClientView(this);
     }
 	
   
     public static void main(String args[]) throws UnknownHostException, IOException { 
     	
-    	final int port = 1234;
+    	final int port = 8463;
     	final String ipAddress = "127.0.0.1";
     	Client client = new Client(port, ipAddress);
     	
@@ -57,36 +64,64 @@ public class Client implements Runnable {
      * Query the server for a specific word
      */
     public void sendQuery(String query) {
+    	
+    	if (isEmpty(query)) {
+    		view.showError("Make sure you search for *something*, you dingus!");
+    		return;
+    	}
+    	
+    	view.showResponse("Word: " + query + "\n");
     	System.out.println("Sending query to server:" + query);
-    	send("GET " + query);
+    	send(QUERY + query);
     }
     
     /**
      * Add a word to the server's dictionary
      */
     public void addWord(String word, String definition) {
+    	
+    	if (isEmpty(word)) {
+    		view.showError("You didn't pop a word in.");
+    		return;
+    	} else if (isEmpty(definition)) {
+    		view.showError("You need to write what the word means as well.");
+    		return;
+    	}
+    	
     	System.out.println("Sending new word to server:" + word + ": " + definition);
-    	send("PUT " + word + SEPARATOR + definition);
+    	send(ADD + word.replace("~", "") + SEPARATOR + definition);
     }
     
     /**
      * Removes a word from the server's dictionary
      */
     public void removeWord(String word) {
+    	if (isEmpty(word)) {
+    		view.showError("You didn't pop a word in.");
+    		return;
+    	}
+    	
     	System.out.println("Deleting word from server:" + word);
-    	send("DEL " + word);
+    	send(REMOVE + word);
     }
     
     /**
-     * Helper function to send a message to the server
+     * Helper functions
      */
+    private boolean isEmpty(String word) {
+    	return word.equals("");
+    }
+    
     private void send(String msg) {
+    	
+    	// Quit client on command
     	if (msg.equals("QUIT")) {
         	stop();
         }
         
         try { 
-            output.writeUTF(msg); 
+            // clean up the query
+        	output.writeUTF(msg.trim()); 
         } catch (IOException e) { 
             view.showError("Error trying to send to the server! Try again in a second. ");
         	e.printStackTrace(); 
@@ -112,7 +147,6 @@ public class Client implements Runnable {
 		} catch (UnknownHostException e) {
 			view.showError("IP Address not found.");
 			e.printStackTrace();
-			System.exit(0);
 		}
         
         // connect to server if it's started
@@ -121,7 +155,6 @@ public class Client implements Runnable {
         } catch (IOException ce) {
         	view.showError("Server not able to connect to ip: " + ip + " port number: " + port);
         	ce.printStackTrace();
-        	System.exit(0); 
         }
         
         // obtain input and output streams
@@ -131,7 +164,6 @@ public class Client implements Runnable {
 		} catch (IOException e) {
 			view.showError("Unable to connect to input and output streams.");
 			e.printStackTrace();
-			stop();
 		}
     }
     
@@ -148,7 +180,7 @@ public class Client implements Runnable {
                         // read the message sent to this client 
                         String msg = input.readUTF();
                         System.out.println("Response from Server: " + msg);
-                        view.showResponse(msg);
+                        directMessage(msg);
                     } catch (SocketException se) {
                     	view.showError("Server not available. Closing Connection.");
                     	break;
@@ -157,7 +189,7 @@ public class Client implements Runnable {
                     } 
                 } 
                 
-                stop();
+                //stop();
             }
         });
         
@@ -165,7 +197,34 @@ public class Client implements Runnable {
     }
     
     /**
-     * Checks if server is running
+     * Determines how to react to a message
+     */
+    private void directMessage(String message) {
+
+    	String[] splitMessage = message.split(" ", 2);
+    	String command = splitMessage[0];
+        String content = splitMessage[1];
+        
+        if (command.equals(ERROR)) {
+        	view.showError("That didn't work! " + content);
+        } 
+        
+        else if (command.equals(SUCCESS)) {
+        	view.showSuccess("Yay! " + content);
+        } 
+        
+        else if (command.equals(QUERY_RESPONSE)) {
+        	List<Result> results = JSON.parseArray(content, Result.class);
+        	view.showResults(results);
+        } 
+        
+        else {
+        	view.showResponse("Unhandled response! " + message); // delete out later??????
+        }
+    }
+    
+    /**
+     * Checks if client is running
      */
     public synchronized boolean isRunning() {
     	return clientRunning;

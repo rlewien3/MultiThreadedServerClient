@@ -16,7 +16,7 @@ import java.util.concurrent.Executors;
  */
 public class Server implements Runnable { 
    
-	private final int poolSize = 3;
+	private final int poolSize = 3; // DOESN'T 
 	private final String dictLocation = "C:\\Users\\rlewi\\Documents\\MultiThreadedServerClient\\src\\server\\data.json";
 	private int port;
 	private String ipAddress;
@@ -32,7 +32,7 @@ public class Server implements Runnable {
     	// Read in dictionary
     	DictFileReader reader = new DictFileReader();
     	dictionary = reader.readDict(dictLocation);
-    	
+    	System.out.println("Dictionary size: " + dictionary.size());    	
     	this.port = port;
     	this.ipAddress = ipAddress;
     }
@@ -41,7 +41,7 @@ public class Server implements Runnable {
     public static void main(String[] args) throws IOException { 
 
     	// to be command line arguments later?
-    	final int port = 1234;
+    	final int port = 8463;
     	final String ipAddress = "127.0.0.1";
     	
     	System.out.println("SERVER\nOn port: " + port + "\n");
