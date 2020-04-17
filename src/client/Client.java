@@ -18,6 +18,9 @@ public class Client implements Runnable {
 	private static final String QUERY = "GET";
 	private static final String ADD = "PUT";
 	private static final String REMOVE = "DEL";
+	private static final String SEPARATOR = "GB&^IR%&*"; // to separate two arguments in an add query
+	
+	private ClientView view;
 	
     private InetAddress ip = null;
     private Socket socket = null;
@@ -33,6 +36,9 @@ public class Client implements Runnable {
 		
 		this.port = port;
 		this.ipAddress = ipAddress;
+		
+		// Start GUI
+		view = new ClientView(this);
     }
 	
   
@@ -40,22 +46,58 @@ public class Client implements Runnable {
     	
     	final int port = 1234;
     	final String ipAddress = "127.0.0.1";
-    	
-    	// Start GUI
     	Client client = new Client(port, ipAddress);
-    	ClientView clientView = new ClientView(client);
-    	clientView.run();
     	
     	// Start Client behaviour
     	System.out.println("CLIENT\nOn port: " + port + "\n");
     	client.run();
     }
     
+    /**
+     * Query the server for a specific word
+     */
+    public void sendQuery(String query) {
+    	System.out.println("Sending query to server:" + query);
+    	send("GET " + query);
+    }
+    
+    /**
+     * Add a word to the server's dictionary
+     */
+    public void addWord(String word, String definition) {
+    	System.out.println("Sending new word to server:" + word + ": " + definition);
+    	send("PUT " + word + SEPARATOR + definition);
+    }
+    
+    /**
+     * Removes a word from the server's dictionary
+     */
+    public void removeWord(String word) {
+    	System.out.println("Deleting word from server:" + word);
+    	send("DEL " + word);
+    }
+    
+    /**
+     * Helper function to send a message to the server
+     */
+    private void send(String msg) {
+    	if (msg.equals("QUIT")) {
+        	stop();
+        }
+        
+        try { 
+            output.writeUTF(msg); 
+        } catch (IOException e) { 
+            view.showError("Error trying to send to the server! Try again in a second. ");
+        	e.printStackTrace(); 
+        }
+    }
+    
     @Override
     public void run() {
+    	view.run();
     	clientRunning = true;
     	connectToServer();
-    	sendMessages();
         readMessages();
     }
     
@@ -68,7 +110,7 @@ public class Client implements Runnable {
     	try {
 			ip = InetAddress.getByName(ipAddress);
 		} catch (UnknownHostException e) {
-			System.out.println("IP Address not found.");
+			view.showError("IP Address not found.");
 			e.printStackTrace();
 			System.exit(0);
 		}
@@ -77,7 +119,7 @@ public class Client implements Runnable {
         try {
         	socket = new Socket(ip, port);
         } catch (IOException ce) {
-        	System.out.println("Server not able to connect to ip: " + ip + " port number: " + port);
+        	view.showError("Server not able to connect to ip: " + ip + " port number: " + port);
         	ce.printStackTrace();
         	System.exit(0); 
         }
@@ -87,45 +129,10 @@ public class Client implements Runnable {
 			input = new DataInputStream(socket.getInputStream());
 			output = new DataOutputStream(socket.getOutputStream());
 		} catch (IOException e) {
-			System.out.println("Unable to connect to input and output streams.");
+			view.showError("Unable to connect to input and output streams.");
 			e.printStackTrace();
 			stop();
 		}
-    }
-    
-    /**
-     * Sends messages to output
-     */
-    private void sendMessages() {
-    	Scanner scn = new Scanner(System.in); 
-    	
-        Thread sendMessage = new Thread(new Runnable() { 
-            
-        	@Override
-            public void run() { 
-                while (isRunning()) { 
-  
-                	// Read input from user
-                    String msg = scn.nextLine();
-                    
-                    if (msg.equals("QUIT")) {
-                    	break;
-                    }
-                    
-                    try { 
-                        output.writeUTF(msg); 
-                    } catch (IOException e) { 
-                        e.printStackTrace(); 
-                    }
-                }
-                
-                // Closing the client
-                scn.close();
-                stop();
-            }
-        });
-        
-        sendMessage.start();
     }
     
     /**
@@ -139,10 +146,11 @@ public class Client implements Runnable {
                 while (isRunning()) {
                     try { 
                         // read the message sent to this client 
-                        String msg = input.readUTF(); 
-                        System.out.println("Response from Server: " + msg); 
+                        String msg = input.readUTF();
+                        System.out.println("Response from Server: " + msg);
+                        view.showResponse(msg);
                     } catch (SocketException se) {
-                    	System.out.println("Server not available. CLosing Connection.");
+                    	view.showError("Server not available. Closing Connection.");
                     	break;
                 	} catch (IOException e) {
                         e.printStackTrace(); 
@@ -172,7 +180,7 @@ public class Client implements Runnable {
         	try {
         		socket.close();
         	} catch (IOException e) {
-        		System.out.println("Error closing client");
+        		view.showError("Error closing client");
         	}
     	}
     	System.out.println("Client stopped.");

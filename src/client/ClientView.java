@@ -1,6 +1,5 @@
 package client;
 
-import java.awt.EventQueue;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -10,12 +9,12 @@ import java.awt.event.ActionListener;
 import javax.swing.*;
 
 import com.bulenkov.darcula.DarculaLaf;
-import java.awt.GridLayout;
 
 public class ClientView implements Runnable {
 
 	private JFrame frame;
 	private JTextField textField;
+	JTextArea textArea;
 	private Client client;
 
 	/**
@@ -75,7 +74,7 @@ public class ClientView implements Runnable {
 		gbc_btnNewButton.gridy = 0;
 		frame.getContentPane().add(btnNewButton, gbc_btnNewButton);
 
-		JTextArea textArea = new JTextArea();
+		textArea = new JTextArea();
 		GridBagConstraints gbc_textArea = new GridBagConstraints();
 		gbc_textArea.fill = GridBagConstraints.BOTH;
 		gbc_textArea.insets = new Insets(0, 0, 0, 5);
@@ -93,8 +92,22 @@ public class ClientView implements Runnable {
 		btnNewButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				System.out.println("Submit clicked!");
-				textArea.append(textField.getText()+"\n");
+				client.sendQuery(textField.getText());
 			}
 		});
+	}
+	
+	/**
+	 * Shows a response in the GUI's text area
+	 */
+	public void showResponse (String response) {
+		textArea.append("Server response: " + response + "\n");
+	}
+	
+	/**
+	 * Shows an error in the GUI's text area
+	 */
+	public void showError (String error) {
+		textArea.append("Error: " + error + "\n");
 	}
 }

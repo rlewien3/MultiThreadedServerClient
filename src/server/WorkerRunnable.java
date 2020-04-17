@@ -27,8 +27,9 @@ class WorkerRunnable implements Runnable {
 	private static final String QUERY = "GET";
 	private static final String ADD = "PUT";
 	private static final String REMOVE = "DEL";
-	private static final String PROTOCOL_INSTRUCTIONS = "Begin with either " + QUERY + ", " + ADD + " or " + REMOVE + " and then follow with your word/ definition.";
-	private static final String ADD_PROTOCOL_INSTRUCTIONS = "The correct form is <word>~~~<new definition>.";
+	private static final String SEPARATOR = "GB&^IR%&*"; // to separate two arguments in an add query
+	private static final String PROTOCOL_INSTRUCTIONS = "Begin with either " + QUERY + ", " + ADD + " or " + REMOVE + " and then follow with your word/ definition. ";
+	private static final String ADD_PROTOCOL_INSTRUCTIONS = "The correct form is <word>" + SEPARATOR + "<new definition>.";
 	
 	Scanner scn = new Scanner(System.in); 
     private DataInputStream input; 
