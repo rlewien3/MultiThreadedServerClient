@@ -41,7 +41,7 @@ public class Server implements Runnable {
     public static void main(String[] args) throws IOException { 
 
     	// to be command line arguments later?
-    	final int port = 8463;
+    	final int port = 7364;
     	final String ipAddress = "127.0.0.1";
     	
     	System.out.println("SERVER\nOn port: " + port + "\n");

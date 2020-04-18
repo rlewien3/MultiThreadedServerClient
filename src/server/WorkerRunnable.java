@@ -132,7 +132,7 @@ class WorkerRunnable implements Runnable {
     	if (server.getDictionary().containsKey(word)) {
     		return QUERY_RESPONSE + server.getDictionary().get(word).toString();
     	} else {
-    		return ERROR + "Word not found in the dictionary.";
+    		return ERROR + "\"" + word + "not found in the dictionary. Try a different word!";
     	}
     }
     
@@ -148,7 +148,7 @@ class WorkerRunnable implements Runnable {
         	
         	if (server.getDictionary().containsKey(word)) {
         		// add definition to word?
-        		return ERROR + "Dictionary already contains the word " + word;
+        		return ERROR + "Dictionary already contains the word \"" + word;
         	} else {
         		
         		// inputting multiple definitions at once?

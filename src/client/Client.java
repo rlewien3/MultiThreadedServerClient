@@ -51,7 +51,7 @@ public class Client implements Runnable {
   
     public static void main(String args[]) throws UnknownHostException, IOException { 
     	
-    	final int port = 8463;
+    	final int port = 7364;
     	final String ipAddress = "127.0.0.1";
     	Client client = new Client(port, ipAddress);
     	
@@ -70,7 +70,8 @@ public class Client implements Runnable {
     		return;
     	}
     	
-    	view.showResponse("Word: " + query + "\n");
+    	view.showInitialResult("Word: " + query + "\n");
+    	
     	System.out.println("Sending query to server:" + query);
     	send(QUERY + query);
     }
@@ -206,16 +207,17 @@ public class Client implements Runnable {
         String content = splitMessage[1];
         
         if (command.equals(ERROR)) {
-        	view.showError("That didn't work! " + content);
+        	view.showError(content);
         } 
         
         else if (command.equals(SUCCESS)) {
-        	view.showSuccess("Yay! " + content);
+        	view.showSuccess(content);
         } 
         
         else if (command.equals(QUERY_RESPONSE)) {
         	List<Result> results = JSON.parseArray(content, Result.class);
         	view.showResults(results);
+        	view.resetToaster();
         } 
         
         else {
