@@ -132,7 +132,7 @@ class WorkerRunnable implements Runnable {
     	if (server.getDictionary().containsKey(word)) {
     		return QUERY_RESPONSE + server.getDictionary().get(word).toString();
     	} else {
-    		return ERROR + "\"" + word + "not found in the dictionary. Try a different word!";
+    		return ERROR + "\"" + word + "\" not found in the dictionary. Try a different word!";
     	}
     }
     

@@ -115,6 +115,7 @@ public class Server implements Runnable {
     	return dictionary;
     }
     
+    
     /**
      * Checks if server is running
      */
