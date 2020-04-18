@@ -73,7 +73,7 @@ public class ClientView implements Runnable {
 		}
 		
 		frame = new JFrame();
-		frame.setBounds(100, 100, 440, 494);
+		frame.setBounds(100, 100, 440, 682);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		GridBagLayout gridBagLayout = new GridBagLayout();
      	gridBagLayout.columnWidths = new int[]{497, 0};
@@ -86,9 +86,9 @@ public class ClientView implements Runnable {
         JPanel searchPanel = new JPanel();
         GridBagLayout gbl_searchPanel = new GridBagLayout();
         gbl_searchPanel.columnWidths = new int[]{20, 203, 0, 20, 0};
-        gbl_searchPanel.rowHeights = new int[]{20, 0, 0, 0, 150, 20, 0};
-        gbl_searchPanel.columnWeights = new double[]{1.0, 3.0, 0.0, 1.0, Double.MIN_VALUE};
-        gbl_searchPanel.rowWeights = new double[]{1.0, 0.0, 0.0, 0.0, 20.0, 1.0, Double.MIN_VALUE};
+        gbl_searchPanel.rowHeights = new int[]{20, 0, 0, 0, 150, 30, 20, 0};
+        gbl_searchPanel.columnWeights = new double[]{1.0, 1.0, 0.0, 1.0, Double.MIN_VALUE};
+        gbl_searchPanel.rowWeights = new double[]{1.0, 0.0, 0.0, 0.0, 20.0, 1.0, 1.0, Double.MIN_VALUE};
         searchPanel.setLayout(gbl_searchPanel);
         
         // Search title
@@ -129,18 +129,46 @@ public class ClientView implements Runnable {
         });
         
         
-        JScrollPane scrollPane = new JScrollPane(); 
+
+        JTextPane textPane = createTextPane();
+        textPane.setEditable(false);
+        textPane.setBorder(new EmptyBorder(10,10,10,10));
+        textPane.setBackground(new Color(41, 43, 45));
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.anchor = GridBagConstraints.WEST;
+        constraints.fill = GridBagConstraints.VERTICAL;
+        constraints.gridy = 1;
+        
+        
+        JTextPane textPane2 = createTextPane();
+        textPane2.setEditable(false);
+        textPane2.setBorder(new EmptyBorder(10,10,10,10));
+        GridBagConstraints constraints2 = new GridBagConstraints();
+        constraints2.anchor = GridBagConstraints.WEST;
+        constraints2.fill = GridBagConstraints.VERTICAL;
+        constraints2.gridy = 1;
+        
+        JPanel allResults = new JPanel();
+        allResults.setLayout(new BoxLayout(allResults, BoxLayout.Y_AXIS));
+        allResults.add(textPane, constraints);
+        allResults.add(textPane2, constraints2);
+        allResults.add(Box.createVerticalGlue());
+        
+        
+        JScrollPane scrollPane = new JScrollPane();
         scrollPane.setBorder(new EmptyBorder(0,0,0,0));
         GridBagConstraints gbc_scrollPane = new GridBagConstraints();
+        gbc_scrollPane.insets = new Insets(0, 0, 5, 5);
         gbc_scrollPane.gridwidth = 2;
         gbc_scrollPane.fill = GridBagConstraints.BOTH;
         gbc_scrollPane.gridx = 1;
         gbc_scrollPane.gridy = 4;
+        scrollPane.setViewportView(allResults);
+        
+        
         searchPanel.add(scrollPane, gbc_scrollPane);
         
-        JTextPane textPane = createTextPane();
-        textPane.setEditable(false);
-        scrollPane.setViewportView(textPane);
+        
         
         
         /** Edit Panel **/
@@ -260,13 +288,14 @@ public class ClientView implements Runnable {
      	JTabbedPane tp = new JTabbedPane();   
      	tp.add("Search", searchPanel);
      	
+     
      	
      	// Search result area
      	textArea = new JTextArea();
      	GridBagConstraints gbc_textArea = new GridBagConstraints();
      	gbc_textArea.insets = new Insets(0, 0, 0, 5);
      	gbc_textArea.gridx = 1;
-     	gbc_textArea.gridy = 5;
+     	gbc_textArea.gridy = 6;
      	searchPanel.add(textArea, gbc_textArea);
      	textArea.setRows(10);
      	tp.add("Edit", editPanel);
@@ -410,7 +439,14 @@ public class ClientView implements Runnable {
                   "bold", "regular", "bold", "regular", "bold", "regular", "bold", "italic"
                 };
  
-        JTextPane textPane = new JTextPane();
+        JTextPane textPane = new JTextPane() {
+
+			private static final long serialVersionUID = 8284552836796875970L;
+
+			@Override
+			public boolean getScrollableTracksViewportWidth() {
+        		return true;}
+        	};
         StyledDocument doc = textPane.getStyledDocument();
         addStylesToDocument(doc);
  
