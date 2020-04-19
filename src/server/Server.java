@@ -2,7 +2,9 @@ package server;
 
 import java.io.*; 
 import java.net.*;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors; 
@@ -16,7 +18,7 @@ import java.util.concurrent.Executors;
  */
 public class Server implements Runnable { 
    
-	private final int poolSize = 3; // DOESN'T 
+	private final int poolSize = 200;
 	private final String dictLocation = "C:\\Users\\rlewi\\Documents\\MultiThreadedServerClient\\src\\server\\data.json";
 	private int port;
 	private String ipAddress;
@@ -41,7 +43,7 @@ public class Server implements Runnable {
     public static void main(String[] args) throws IOException { 
 
     	// to be command line arguments later?
-    	final int port = 7364;
+    	final int port = 3784;
     	final String ipAddress = "127.0.0.1";
     	
     	System.out.println("SERVER\nOn port: " + port + "\n");
@@ -109,12 +111,53 @@ public class Server implements Runnable {
     }
     
     /**
-     * Dictionary getter
+     * Gets a result from the dictionary as a string, if it is in the dictionary
+     * Does not return a reference
      */
-    public synchronized ConcurrentHashMap<String, List<Result>> getDictionary() {
-    	return dictionary;
+    public synchronized String getResultString(String word) {
+    	if (dictionary.containsKey(word)) {
+    		return dictionary.get(word).toString();
+    	} else {
+    		return null;
+    	}
     }
     
+    /**
+     * Gets a random word from the result from the dictionary as a string, if it is in the dictionary
+     * Does not return a reference
+     */
+    public synchronized String getRandomWord() {
+    	
+    	List<String> keys = new ArrayList<String>(dictionary.keySet());
+    	Random r = new Random();
+    	return keys.get(r.nextInt(keys.size()));
+    }
+    
+    /**
+     * Adds a word to the dictionary, if the word is not already in it
+     * Returns true if it succeeds
+     */
+    public synchronized boolean addWord(String word, List<Result> results) {
+    	if (dictionary.containsKey(word)) {
+    		return false;
+    	} else {
+    		dictionary.put(word, results);
+    		return true;
+    	}
+    }
+    
+    /**
+     * Removes a word to the dictionary, if the word is in it
+     * Returns true if it succeeds
+     */
+    public synchronized boolean removeWord(String word) {
+    	if (dictionary.containsKey(word)) {
+    		dictionary.remove(word);
+    		return true;
+    	} else {
+    		return false;
+    	}
+    }
     
     /**
      * Checks if server is running

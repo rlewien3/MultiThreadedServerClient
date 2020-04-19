@@ -22,12 +22,13 @@ public class Client implements Runnable {
 	private static final String QUERY = "GET ";
 	private static final String ADD = "PUT ";
 	private static final String REMOVE = "DEL ";
-	private static final String RANDOM = "RDM"; // to ask for a random word
+	private static final String RANDOM = "RDM "; // to ask for a random word
 	private static final String SEPARATOR = "~~~"; // to separate two arguments in an add query
 	// server side
 	private static final String ERROR = "ERR";
 	private static final String SUCCESS = "OK";
 	private static final String QUERY_RESPONSE = "RES";
+	private static final String RDM_RESPONSE = "RDM";
 	
 	private ClientView view;
 	
@@ -52,7 +53,7 @@ public class Client implements Runnable {
   
     public static void main(String args[]) throws UnknownHostException, IOException { 
     	
-    	final int port = 7364;
+    	final int port = 3784;
     	final String ipAddress = "127.0.0.1";
     	Client client = new Client(port, ipAddress);
     	
@@ -161,7 +162,7 @@ public class Client implements Runnable {
         try {
         	socket = new Socket(ip, port);
         } catch (IOException ce) {
-        	view.showError("Server not able to connect to ip: " + ip + " port number: " + port);
+        	view.showError("Server wasn't found at port number: " + port + ". Try a different port number!");
         	ce.printStackTrace();
         }
         
@@ -190,7 +191,7 @@ public class Client implements Runnable {
                         System.out.println("Response from Server: " + msg);
                         directMessage(msg);
                     } catch (SocketException se) {
-                    	view.showError("Server not available. Closing Connection.");
+                    	view.showError("Server is no available. Click to try again.");
                     	break;
                 	} catch (IOException e) {
                         e.printStackTrace(); 
@@ -221,9 +222,21 @@ public class Client implements Runnable {
         	view.showSuccess(content);
         } 
         
-        else if (command.equals(QUERY_RESPONSE)) {
-        	List<Result> results = JSON.parseArray(content, Result.class);
-        	view.showResults(results);
+        else if (command.equals(QUERY_RESPONSE) | command.equals(RDM_RESPONSE)) {
+        	
+        	// separate out original word
+        	String[] splitContent = content.split(SEPARATOR, 2);
+        	String word = splitContent[0];
+            String result = splitContent[1];
+        	
+        	List<Result> results = JSON.parseArray(result, Result.class);
+        	
+        	// Let view know it's a random message
+        	if (command.equals(RDM_RESPONSE)) {
+        		view.showResults(word, results, true);
+        	} else {
+        		view.showResults(word, results, false);
+        	}
         	view.resetToaster();
         }
         

@@ -37,6 +37,7 @@ class WorkerRunnable implements Runnable {
 	private static final String ERROR = "ERR ";
 	private static final String SUCCESS = "OK ";
 	private static final String QUERY_RESPONSE = "RES ";
+	private static final String RDM_RESPONSE = "RDM ";
 	
 	Scanner scn = new Scanner(System.in); 
     private DataInputStream input; 
@@ -130,9 +131,13 @@ class WorkerRunnable implements Runnable {
     
     private String queryWord(String word) {
     	System.out.println("Looking for " + word + " in dictionary...");
-    	if (server.getDictionary().containsKey(word)) {
-    		return QUERY_RESPONSE + server.getDictionary().get(word).toString(); // send word as well
+    	
+    	String result = server.getResultString(word);
+    	
+    	if (result != null) {
+    		return QUERY_RESPONSE + word + SEPARATOR + result;
     	} else {
+    		// word wasn't in the dictionary
     		return ERROR + "\"" + word + "\" not found in the dictionary. Try a different word!";
     	}
     }
@@ -147,21 +152,20 @@ class WorkerRunnable implements Runnable {
             System.out.println("word: " + word);
             System.out.println("definition: " + definition);
         	
-        	if (server.getDictionary().containsKey(word)) {
-        		// add definition to word?
-        		return ERROR + "Dictionary already contains the word \"" + word;
+            // inputting multiple definitions at once?
+    		
+            // wrap definition into an array of results to put in dictionary
+    		Result newResult = new Result();
+    		newResult.setDefinition(definition);
+    		List<Result> newResults = new ArrayList<Result>(1);
+    		newResults.add(newResult);
+            
+    		boolean success = server.addWord(word, newResults);
+    		
+        	if (success) {
+        		return SUCCESS + "\"" + word + "\" successfully added to the dictionary!";
         	} else {
-        		
-        		// inputting multiple definitions at once?
-        		
-        		Result newResult = new Result();
-        		newResult.setDefinition(definition);
-        		
-        		List<Result> newResults = new ArrayList<Result>(1);
-        		newResults.add(newResult);
-        		
-        		server.getDictionary().put(word, newResults);
-        		return SUCCESS + word + " successfully added to the dictionary!";
+        		return ERROR + "Dictionary already contains the word \"" + word + "\"";
         	}
     	} else {
     		return ERROR + "Invalid adding query! " + ADD_PROTOCOL_INSTRUCTIONS;
@@ -169,11 +173,13 @@ class WorkerRunnable implements Runnable {
     }
     
     private String removeWord(String word) {
-    	if (!server.getDictionary().containsKey(word)) {
-    		return ERROR + "Dictionary does not contain the word " + word;
+    	
+    	boolean success = server.removeWord(word);
+    	
+    	if (success) {
+    		return SUCCESS + word + " successfully removed from the dictionary!";
     	} else {
-    		server.getDictionary().remove(word);
-    		return SUCCESS + word + " successfully removed to the dictionary!";
+    		return ERROR + "Dictionary does not contain the word \"" + word + "\"";
     	}
     }
     
@@ -181,13 +187,14 @@ class WorkerRunnable implements Runnable {
     	
     	System.out.println("Getting random word!");
     	
-    	// get a random word from the dictionary
-    	List<String> keysAsArray = new ArrayList<String>(server.getDictionary().keySet());
-    	Random r = new Random();
-    	String word = keysAsArray.get(r.nextInt(keysAsArray.size()));
+    	// Keep getting random words to make sure the result is there
+    	String result = null;
+    	String word = null;
+    	while (result == null) {
+    		word = server.getRandomWord();
+    		result = server.getResultString(word);
+    	}
     	
-    	String result = queryWord(word);
-    	
-    	return result; // put in word as well
+    	return RDM_RESPONSE + word + SEPARATOR + result;
     }
 }

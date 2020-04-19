@@ -31,6 +31,7 @@ public class ClientView implements Runnable {
 	private final Color STD_BACKGROUND = new Color(60, 63, 65);
 	private final Color LIGHT_BACKGROUND = new Color(69, 73, 74);
 	private final Color TOAST_BACKGROUND = new Color(45, 49, 50);
+	private final Color FADED_TEXT = new Color(148, 148, 148);
 	
 	private JFrame frame;
 	
@@ -81,7 +82,7 @@ public class ClientView implements Runnable {
 		// Total frame of program
 		frame = new JFrame();
 		frame.setTitle(DEFAULT_TOAST);
-		frame.setBounds(100, 100, 365, 420);
+		frame.setBounds(100, 100, 500, 553);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		GridBagLayout gridBagLayout = new GridBagLayout();
      	gridBagLayout.columnWidths = new int[]{497, 0};
@@ -96,9 +97,9 @@ public class ClientView implements Runnable {
         searchPanel.setBackground(LIGHT_BACKGROUND);
         GridBagLayout gbl_searchPanel = new GridBagLayout();
         gbl_searchPanel.columnWidths = new int[]{20, 230, 80, 15, 0};
-        gbl_searchPanel.rowHeights = new int[]{70, 6, 150, 30, 10};
+        gbl_searchPanel.rowHeights = new int[]{70, 10, 150, 30, 10};
         gbl_searchPanel.columnWeights = new double[]{1.0, 10.0, 0.0, 1.0, Double.MIN_VALUE};
-        gbl_searchPanel.rowWeights = new double[]{1.0, 1.0, 20.0, 0.0, 1.0};
+        gbl_searchPanel.rowWeights = new double[]{1.0, 0.0, 20.0, 0.0, 1.0};
         searchPanel.setLayout(gbl_searchPanel);
         
         JPanel panel = new JPanel();
@@ -120,12 +121,13 @@ public class ClientView implements Runnable {
         // Search title
         JLabel searchTitle = new JLabel("What're you lookin for?");
         GridBagConstraints gbc_searchTitle = new GridBagConstraints();
+        gbc_searchTitle.gridwidth = 2;
         gbc_searchTitle.anchor = GridBagConstraints.WEST;
         gbc_searchTitle.insets = new Insets(0, 0, 5, 5);
         gbc_searchTitle.gridx = 1;
         gbc_searchTitle.gridy = 1;
         panel.add(searchTitle, gbc_searchTitle);
-        searchTitle.setFont(new Font("Tahoma", Font.BOLD, 14));
+        searchTitle.setFont(new Font("Tahoma", Font.BOLD, 18));
         
         // Search query field
         queryField = new JTextField();
@@ -182,7 +184,7 @@ public class ClientView implements Runnable {
         
         // 'Add' title
         JLabel addTitle = new JLabel("Add a New Term");
-        addTitle.setFont(new Font("Tahoma", Font.BOLD, 14));
+        addTitle.setFont(new Font("Tahoma", Font.BOLD, 16));
         GridBagConstraints gbc_addTitle = new GridBagConstraints();
         gbc_addTitle.gridwidth = 2;
         gbc_addTitle.anchor = GridBagConstraints.WEST;
@@ -193,7 +195,7 @@ public class ClientView implements Runnable {
         
         // Add word field label
         JLabel addTermLabel = new JLabel("Term");
-        addTermLabel.setFont(new Font("Tahoma", Font.PLAIN, 10));
+        addTermLabel.setFont(new Font("Tahoma", Font.PLAIN, 12));
         GridBagConstraints gbc_addTermLabel = new GridBagConstraints();
         gbc_addTermLabel.gridwidth = 2;
         gbc_addTermLabel.insets = new Insets(0, 0, 5, 5);
@@ -213,7 +215,7 @@ public class ClientView implements Runnable {
         
         // Add definition field label
         JLabel addDefinitionLabel = new JLabel("Definition");
-        addDefinitionLabel.setFont(new Font("Tahoma", Font.PLAIN, 10));
+        addDefinitionLabel.setFont(new Font("Tahoma", Font.PLAIN, 12));
         GridBagConstraints gbc_addDefinitionLabel = new GridBagConstraints();
         gbc_addDefinitionLabel.insets = new Insets(0, 0, 5, 5);
         gbc_addDefinitionLabel.anchor = GridBagConstraints.NORTHWEST;
@@ -249,7 +251,7 @@ public class ClientView implements Runnable {
         
         // 'Remove' title
         JLabel removeTitle = new JLabel("Remove a Term");
-        removeTitle.setFont(new Font("Tahoma", Font.BOLD, 14));
+        removeTitle.setFont(new Font("Tahoma", Font.BOLD, 16));
         GridBagConstraints gbc_removeTitle = new GridBagConstraints();
         gbc_removeTitle.gridwidth = 2;
         gbc_removeTitle.anchor = GridBagConstraints.WEST;
@@ -289,7 +291,7 @@ public class ClientView implements Runnable {
      	JTabbedPane tp = new JTabbedPane();   
      	tp.add("Search", searchPanel);
      	
-     	JButton randomButton = new JButton("Feeling lucky?");
+     	JButton randomButton = new JButton("Feeling Lucky?");
      	randomButton.setBackground(LIGHT_BACKGROUND);
      	GridBagConstraints gbc_randomButton = new GridBagConstraints();
      	gbc_randomButton.fill = GridBagConstraints.HORIZONTAL;
@@ -360,35 +362,49 @@ public class ClientView implements Runnable {
         toastLabel.setText(DEFAULT_TOAST);
 	}
 	
-	/**
-	 * Initial showing in text area
-	 */
-	//private initialResults() {
-		
-	//}
-	
+
 	/**
 	 * Shows a response in the GUI's text pane
 	 */
-	public void showResults(List<Result> results) {
+	public void showResults(String word, List<Result> results, boolean isRandom) {
         
 		ArrayList<String> s = new ArrayList<String>();
 		ArrayList<String> styles = new ArrayList<String>();
 		
+		// Random subtitle
+		if (isRandom) {
+			s.add("Lucky Term of the Day\n");
+			styles.add("large title");
+			
+			// Separator
+	        s.add("\n");
+	        styles.add("small");
+		}
+		
+		// Title
+		s.add(capitalise(word) + "\n");
+		styles.add("title");
+
 		// Collect results together
 		int n = 1;
 		for (Result result : results) {
-			
+
 			// Separator between results
 	        if (n != 1) {
-	        	s.add("\n\n");
+	        	s.add("\n");
 		        styles.add("regular");
 	        }
 			
-			// title
-	        s.add("Definition " + n + "\n");
-	        styles.add("bold large");
-	        n++;
+			// Subtitle if multiple results
+	        if (results.size() > 1) {
+	        	// Separator
+		        s.add("\n");
+		        styles.add("small");
+		        
+	        	s.add("Definition " + n + "\n");
+		        styles.add("subtitle");
+		        n++;
+	        }
 	        
 	        if (result.getPartOfSpeech().length() > 0) {
 	        	s.add(result.getPartOfSpeech() +"\n");
@@ -431,7 +447,11 @@ public class ClientView implements Runnable {
 		    
 	        // Examples
 	        if (result.getExamples().size() > 0) {
-		        s.add("\nExamples: \n");
+	        	// Separator
+		        s.add("\n");
+		        styles.add("small");
+		        
+	        	s.add("Examples: \n");
 		        styles.add("bold");
 		        s.add(collectStrings(result.getExamples()));
 		        styles.add("italic");
@@ -440,6 +460,7 @@ public class ClientView implements Runnable {
 
 		updateTextPane(s, styles);
     }
+	
 	
 	/**
 	 * Updates the search result text pane
@@ -509,11 +530,16 @@ public class ClientView implements Runnable {
         s = doc.addStyle("small", regular);
         StyleConstants.setFontSize(s, 6);
  
-        s = doc.addStyle("large", regular);
-        StyleConstants.setFontSize(s, 15);
- 
-        s = doc.addStyle("bold large", regular);
-        StyleConstants.setFontSize(s, 15);
+        s = doc.addStyle("subtitle", regular);
+        StyleConstants.setFontSize(s, 13);
+        StyleConstants.setBold(s, true);
+        
+        s = doc.addStyle("title", regular);
+        StyleConstants.setFontSize(s, 16);
+        StyleConstants.setBold(s, true);
+        
+        s = doc.addStyle("large title", regular);
+        StyleConstants.setFontSize(s, 18);
         StyleConstants.setBold(s, true);
 	}
 }
