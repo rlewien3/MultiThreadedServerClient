@@ -41,7 +41,7 @@ public class ClientView implements Runnable {
 	private JScrollPane scrollPane;
 	
 	private JTextField addField;
-	private JTextField descriptionField;
+	private JTextArea descriptionField;
 	private JTextField removeField;
 	
 	private JPanel toast;
@@ -127,7 +127,7 @@ public class ClientView implements Runnable {
         gbc_searchTitle.gridx = 1;
         gbc_searchTitle.gridy = 1;
         panel.add(searchTitle, gbc_searchTitle);
-        searchTitle.setFont(new Font("Tahoma", Font.BOLD, 18));
+        searchTitle.setFont(new Font("Tahoma", Font.BOLD, 19));
         
         // Search query field
         queryField = new JTextField();
@@ -176,9 +176,9 @@ public class ClientView implements Runnable {
         /** Edit Tab **/
         JPanel editPanel = new JPanel();
         GridBagLayout gbl_editPanel = new GridBagLayout();
-        gbl_editPanel.columnWidths = new int[]{20, 180, 0, 15, 0};
+        gbl_editPanel.columnWidths = new int[]{30, 179, 0, 25, 0};
         gbl_editPanel.rowHeights = new int[]{20, 0, 0, 22, 0, 50, 15, 0, 22, 20, 0};
-        gbl_editPanel.columnWeights = new double[]{2.0, 4.0, 0.0, 2.0, Double.MIN_VALUE};
+        gbl_editPanel.columnWeights = new double[]{0.0, 1.0, 0.0, 0.0, Double.MIN_VALUE};
         gbl_editPanel.rowWeights = new double[]{2.0, 0.0, 0.0, 0.0, 0.0, 4.0, 1.0, 0.0, 0.0, 2.0, Double.MIN_VALUE};
         editPanel.setLayout(gbl_editPanel);
         
@@ -224,7 +224,8 @@ public class ClientView implements Runnable {
         editPanel.add(addDefinitionLabel, gbc_addDefinitionLabel);
         
         // Add definition field
-        descriptionField = new JTextField();
+        descriptionField = new JTextArea();
+        descriptionField.setLineWrap(true);
         GridBagConstraints gbc_descriptionField = new GridBagConstraints();
         gbc_descriptionField.fill = GridBagConstraints.BOTH;
         gbc_descriptionField.insets = new Insets(0, 0, 5, 5);
