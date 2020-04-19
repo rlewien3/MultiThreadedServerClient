@@ -6,7 +6,7 @@ import java.util.List;
 
 import com.alibaba.fastjson.JSON;
 
-import server.Result; 
+import common.Result; 
  
 /**
  * Multithreaded client
@@ -121,16 +121,11 @@ public class Client implements Runnable {
     }
     
     private void send(String msg) {
-    	
-    	// Quit client on command
-    	if (msg.equals("QUIT")) {
-        	stop();
-        }
         
         try { 
             // clean up the query
-        	output.writeUTF(msg.trim()); 
-        } catch (IOException e) { 
+        	output.writeUTF(msg.trim());
+        } catch (IOException | NullPointerException e) { 
             view.showError("Error trying to send to the server! Click here to try again ");
             clientRunning = false;
         	return;
@@ -164,7 +159,7 @@ public class Client implements Runnable {
         try {
         	socket = new Socket(ip, port);
         } catch (IOException ce) {
-        	view.showError("Server wasn't found at port number: " + port + ". Click here to try again!");
+        	view.showError("Server wasn't found at port number " + port + ". Click here to try again!");
         	clientRunning = false;
         	return;
         }
@@ -273,16 +268,15 @@ public class Client implements Runnable {
     /**
      * Stops the client
      */
-    public synchronized void stop() {
+    public synchronized void stopClient() {
     	if (clientRunning) {
     		clientRunning = false;
         	try {
         		socket.close();
-        	} catch (IOException e) {
+        	} catch (IOException | NullPointerException e) {
         		view.showError("Error closing client");
         	}
     	}
     	System.out.println("Client stopped.");
-    	System.exit(0); 
     }
 }

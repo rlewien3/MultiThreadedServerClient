@@ -7,7 +7,17 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors; 
+import java.util.concurrent.Executors;
+
+import javax.swing.JFrame;
+
+import org.apache.commons.io.FileUtils;
+
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+
+import client.ClientView;
+import common.Result; 
   
 /**
  * Multithreaded server
@@ -19,44 +29,72 @@ import java.util.concurrent.Executors;
 public class Server implements Runnable { 
    
 	private final int poolSize = 200;
-	private final String dictLocation = "C:\\Users\\rlewi\\Documents\\MultiThreadedServerClient\\src\\server\\data.json";
-	private int port;
+	private int port = 0;
 	private String ipAddress;
+	private Thread acceptClients;
+	
+	private String dictLocation;
 	
 	private ServerSocket serverSocket = null;
 	private Socket clientSocket;
-	private boolean serverRunning = false;
+	private boolean serverRunning;
+	
 	private ConcurrentHashMap<String, List<Result>> dictionary;
 	protected ExecutorService workerThreads = Executors.newFixedThreadPool(poolSize);
 	
-    public Server(int port, String ipAddress) {
+	private ServerView view;
+	
+    public Server(String ipAddress) {
     	
-    	// Read in dictionary
-    	DictFileReader reader = new DictFileReader();
-    	dictionary = reader.readDict(dictLocation);
-    	System.out.println("Dictionary size: " + dictionary.size());    	
-    	this.port = port;
     	this.ipAddress = ipAddress;
+    	serverRunning = false;
+    	view = new ServerView(this);
     }
     
     
     public static void main(String[] args) throws IOException { 
 
     	// to be command line arguments later?
-    	final int port = 3784;
     	final String ipAddress = "127.0.0.1";
     	
-    	System.out.println("SERVER\nOn port: " + port + "\n");
-    	Server server = new Server(port, ipAddress);
+    	System.out.println("SERVER\n");
+    	Server server = new Server(ipAddress);
     	server.run();
+    }
+    
+    
+    public void setPort(int port) {
+    	this.port = port;
+    }
+    
+    public void setDictLocation(String dictLocation) {
+    	this.dictLocation = dictLocation;
     }
     
     
     @Override
     public void run() {
+
+    	view.run();
+    }
+    
+    /**
+     * Starts the server
+     */
+    public void startServer() {
+    	
+    	// Read in dictionary
+        dictionary = readDict(dictLocation);
+        if (dictionary == null) {
+        	view.showError("Failed reading the dictionary at that path. Try another!");
+        	return;
+        }
+        view.showSuccess("Read dictionary!");
+    	
     	serverRunning = true;
     	openServerSocket();
     	delegateRequests();
+    	view.showSuccess("Server Running!");
     }
     
     
@@ -70,19 +108,16 @@ public class Server implements Runnable {
 		try {
 			ip = InetAddress.getByName(ipAddress);
 		} catch (UnknownHostException e) {
-			e.printStackTrace();
-			System.exit(0);
+			view.showError("IPAddress not allowed.");
 		}
     	
     	// create server socket if port isn't used
     	try {
         	serverSocket = new ServerSocket(port, 100, ip); 
         } catch (BindException be) {
-        	System.out.println("Port is already being used. Quitting.");
-        	System.exit(0);
+        	view.showError("Port is already being used.");
         } catch (IOException ioe) {
-        	System.out.println("ServerSocket was not able to be created. Quitting.");
-        	System.exit(0);
+        	view.showError("ServerSocket was not able to be created.");
         }
     }
     
@@ -92,22 +127,30 @@ public class Server implements Runnable {
      */
     private void delegateRequests() {
     	// running infinite loop for getting client request 
-        while (isRunning()) {
+    	
+    	Server server = this;
+        
+    	acceptClients = new Thread(new Runnable() { 
             
-        	try {
-	        	// Accept the incoming request 
-	            clientSocket = serverSocket.accept();
-	            System.out.println("New client request received: " + clientSocket); 
-	            
-	            // Create a new handler object for handling this request.
-	            workerThreads.execute(new WorkerRunnable(clientSocket, this));
-	            
-        	} catch(IOException ioe) {
-        		System.out.println("Exception found on accept. Ignoring. Stack Trace:"); 
-                ioe.printStackTrace();
-        	}
-        }
-        stop();
+        	@Override
+            public void run() { 
+        		while (isRunning()) {
+                	try {
+        	        	// Accept the incoming request 
+        	            clientSocket = serverSocket.accept();
+        	            System.out.println("New client request received: " + clientSocket); 
+        	            
+        	            // Create a new handler object for handling this request.
+        	            workerThreads.execute(new WorkerRunnable(clientSocket, server));
+        	            
+                	} catch (IOException ioe) {
+                		System.out.println("Exception found on accept. Ignoring.");
+                	}
+                }
+                stopServer();
+            }
+        });
+        acceptClients.start();
     }
     
     /**
@@ -160,6 +203,37 @@ public class Server implements Runnable {
     }
     
     /**
+     * Reads a dictionary file at a specified dataPath
+     */
+    public ConcurrentHashMap<String, List<Result>> readDict(String dataPath) {
+		
+    	File dataFile = FileUtils.getFile(dataPath);
+		
+    	// Collect file into a string
+		String str = null;
+		try {
+			str = FileUtils.readFileToString(dataFile, "utf-8");
+		} catch (IOException | NullPointerException e) {
+			return null;
+		}
+		
+	    JSONObject words = JSONObject.parseObject(str);
+	    
+	    // Parse JSON object into dictionary form
+	    ConcurrentHashMap<String, List<Result>> dictionary = new ConcurrentHashMap<String, List<Result>>();
+	    for (String word : words.keySet()) {
+	    	
+	    	JSONObject wordData = JSONObject.parseObject(words.get(word).toString());
+
+	    	if (wordData.containsKey("definitions")) {
+	    		dictionary.put(word, JSONArray.parseArray(wordData.get("definitions").toString(), Result.class));
+	    	}
+	    }
+	    
+	    return dictionary;
+	}
+    
+    /**
      * Checks if server is running
      */
     public synchronized boolean isRunning() {
@@ -168,17 +242,19 @@ public class Server implements Runnable {
     
     /**
      * Stops the server
+     * @return 
      */
-    public synchronized void stop() {
+    public synchronized void stopServer() {
     	if (serverRunning) {
     		serverRunning = false;
     		workerThreads.shutdownNow();
+    		// acceptClients.shutdown();
         	try {
         		serverSocket.close();
         	} catch (IOException e) {
-        		System.out.println("Error closing server");
+        		view.showError("Error closing server");
         	}
     	}
-    	System.out.println("Server stopped.");
+    	view.showError("Server stopped.");
     }
 } 

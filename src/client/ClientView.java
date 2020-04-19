@@ -21,11 +21,14 @@ import javax.swing.text.StyledDocument;
 
 import com.bulenkov.darcula.DarculaLaf;
 
-import server.Result;
+import common.Result;
+
 import java.awt.Font;
 import java.awt.Color;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 public class ClientView implements Runnable {
 
@@ -85,7 +88,6 @@ public class ClientView implements Runnable {
 		frame = new JFrame();
 		frame.setTitle(DEFAULT_TOAST);
 		frame.setBounds(100, 100, 500, 553);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		GridBagLayout gridBagLayout = new GridBagLayout();
      	gridBagLayout.columnWidths = new int[]{497, 0};
      	gridBagLayout.rowHeights = new int[]{310, 25, 0};
@@ -324,6 +326,7 @@ public class ClientView implements Runnable {
      		@Override
      		public void mouseClicked(MouseEvent arg0) {
      			client.reconnectServer();
+     			toastLabel.setText("Connecting...");
      			System.out.println("Toast clicked");
      		}
      	});
@@ -341,6 +344,17 @@ public class ClientView implements Runnable {
         gbc_toastLabel.gridx = 0;
         gbc_toastLabel.gridy = 0;
         toast.add(toastLabel, gbc_toastLabel);
+        
+        // Close properly
+        frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent event) {
+            	frame.dispose();
+            	client.stopClient();
+            	System.exit(0);
+            }
+        });
      	
 	}
 
