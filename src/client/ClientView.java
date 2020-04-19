@@ -5,14 +5,12 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.BadLocationException;
-import javax.swing.text.Document;
 import javax.swing.text.MutableAttributeSet;
 import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
@@ -30,13 +28,20 @@ import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
+/**
+ * Swing GUI for a dictionary client
+ * Created by Ryan Lewien
+ * 746528
+ * For Distributed Systems (COMP90015)
+ * The University of Melbourne
+ */
 public class ClientView implements Runnable {
 
 	private final String DEFAULT_TOAST = "Pocket Dictionary";
 	private final Color STD_BACKGROUND = new Color(60, 63, 65);
 	private final Color LIGHT_BACKGROUND = new Color(69, 73, 74);
+	private final Color DARK_BACKGROUND = new Color(54, 57, 58);
 	private final Color TOAST_BACKGROUND = new Color(45, 49, 50);
-	private final Color FADED_TEXT = new Color(148, 148, 148);
 	
 	private JFrame frame;
 	
@@ -53,6 +58,7 @@ public class ClientView implements Runnable {
 	private JLabel toastLabel;
 	
 	private Client client;
+	private JTextField portField;
 
 	/**
 	 * Create the application.
@@ -94,6 +100,17 @@ public class ClientView implements Runnable {
      	gridBagLayout.columnWeights = new double[]{1.0, Double.MIN_VALUE};
      	gridBagLayout.rowWeights = new double[]{1.0, 0.0, Double.MIN_VALUE};
      	frame.getContentPane().setLayout(gridBagLayout);
+     	
+     	// Close the client window properly
+        frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent event) {
+            	frame.dispose();
+            	client.stopClient();
+            	System.exit(0);
+            }
+        });
 		
      	
 		/** Search Tab **/
@@ -106,6 +123,7 @@ public class ClientView implements Runnable {
         gbl_searchPanel.rowWeights = new double[]{1.0, 0.0, 20.0, 0.0, 1.0};
         searchPanel.setLayout(gbl_searchPanel);
         
+        // Upper panel containing the search bar
         JPanel panel = new JPanel();
         panel.setBackground(STD_BACKGROUND);
         GridBagConstraints gbc_panel = new GridBagConstraints();
@@ -162,7 +180,6 @@ public class ClientView implements Runnable {
         textPane = new JTextPane();
         textPane.setBackground(LIGHT_BACKGROUND);
         textPane.setEditable(false);
-        
         scrollPane = new JScrollPane();
         scrollPane.setBorder(new EmptyBorder(0,0,0,0));
         GridBagConstraints gbc_scrollPane = new GridBagConstraints();
@@ -173,17 +190,33 @@ public class ClientView implements Runnable {
         gbc_scrollPane.gridy = 2;
         scrollPane.setViewportView(textPane);
         searchPanel.add(scrollPane, gbc_scrollPane);
+        
+        // Feeling lucky randomiser button at bottom
+        JButton randomButton = new JButton("Feeling Lucky?");
+     	randomButton.setBackground(LIGHT_BACKGROUND);
+     	GridBagConstraints gbc_randomButton = new GridBagConstraints();
+     	gbc_randomButton.fill = GridBagConstraints.HORIZONTAL;
+     	gbc_randomButton.gridwidth = 2;
+     	gbc_randomButton.insets = new Insets(0, 0, 5, 5);
+     	gbc_randomButton.gridx = 1;
+     	gbc_randomButton.gridy = 3;
+     	searchPanel.add(randomButton, gbc_randomButton);
+     	randomButton.addActionListener(new ActionListener() {
+        	public void actionPerformed(ActionEvent arg0) {
+        		System.out.println("Requested new random word!");
+        		client.getRandom();
+        	}
+        });
 
         
-        
-        
+
         /** Edit Tab **/
         JPanel editPanel = new JPanel();
         GridBagLayout gbl_editPanel = new GridBagLayout();
         gbl_editPanel.columnWidths = new int[]{30, 179, 0, 25, 0};
-        gbl_editPanel.rowHeights = new int[]{20, 0, 0, 22, 0, 50, 15, 0, 22, 20, 0};
-        gbl_editPanel.columnWeights = new double[]{0.0, 1.0, 0.0, 0.0, Double.MIN_VALUE};
-        gbl_editPanel.rowWeights = new double[]{2.0, 0.0, 0.0, 0.0, 0.0, 4.0, 1.0, 0.0, 0.0, 2.0, Double.MIN_VALUE};
+        gbl_editPanel.rowHeights = new int[]{20, 0, 0, 22, 0, 50, 15, 0, 22, 20, 30, 0};
+        gbl_editPanel.columnWeights = new double[]{1.0, 1.0, 0.0, 0.0, Double.MIN_VALUE};
+        gbl_editPanel.rowWeights = new double[]{2.0, 0.0, 0.0, 0.0, 0.0, 4.0, 1.0, 0.0, 0.0, 2.0, 0.0, Double.MIN_VALUE};
         editPanel.setLayout(gbl_editPanel);
         
         // 'Add' title
@@ -292,42 +325,14 @@ public class ClientView implements Runnable {
         	}
         });
                 
-                
-        // Put panels together on the frame
-     	JTabbedPane tp = new JTabbedPane();   
-     	tp.add("Search", searchPanel);
-     	
-     	JButton randomButton = new JButton("Feeling Lucky?");
-     	randomButton.setBackground(LIGHT_BACKGROUND);
-     	GridBagConstraints gbc_randomButton = new GridBagConstraints();
-     	gbc_randomButton.fill = GridBagConstraints.HORIZONTAL;
-     	gbc_randomButton.gridwidth = 2;
-     	gbc_randomButton.insets = new Insets(0, 0, 5, 5);
-     	gbc_randomButton.gridx = 1;
-     	gbc_randomButton.gridy = 3;
-     	searchPanel.add(randomButton, gbc_randomButton);
-     	tp.add("Edit", editPanel);
-     	randomButton.addActionListener(new ActionListener() {
-        	public void actionPerformed(ActionEvent arg0) {
-        		System.out.println("Requested new random word!");
-        		client.getRandom();
-        	}
-        });
-     	
-     	GridBagConstraints gbc_tp = new GridBagConstraints();
-     	gbc_tp.fill = GridBagConstraints.BOTH;
-     	gbc_tp.gridx = 0;
-     	gbc_tp.gridy = 0;
-     	frame.getContentPane().add(tp, gbc_tp);
-     	
+
+        
      	// Toast panel at bottom
      	toast = new JPanel();
      	toast.addMouseListener(new MouseAdapter() {
      		@Override
      		public void mouseClicked(MouseEvent arg0) {
      			client.reconnectServer();
-     			toastLabel.setText("Connecting...");
-     			System.out.println("Toast clicked");
      		}
      	});
      	GridBagConstraints gbc_toast = new GridBagConstraints();
@@ -345,19 +350,86 @@ public class ClientView implements Runnable {
         gbc_toastLabel.gridy = 0;
         toast.add(toastLabel, gbc_toastLabel);
         
-        // Close properly
-        frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-        frame.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent event) {
-            	frame.dispose();
-            	client.stopClient();
-            	System.exit(0);
-            }
-        });
+        
+        
+        // Put panels together on the frame
+     	JTabbedPane tp = new JTabbedPane();   
+     	tp.add("Search", searchPanel);
+     	tp.add("Edit", editPanel);
      	
+     	// Advanced Features Panel
+     	JPanel advFeaturesPanel = new JPanel();
+     	advFeaturesPanel.setBackground(DARK_BACKGROUND);
+     	GridBagConstraints gbc_advFeaturesPanel = new GridBagConstraints();
+     	gbc_advFeaturesPanel.gridwidth = 4;
+     	gbc_advFeaturesPanel.fill = GridBagConstraints.BOTH;
+     	gbc_advFeaturesPanel.gridx = 0;
+     	gbc_advFeaturesPanel.gridy = 10;
+     	editPanel.add(advFeaturesPanel, gbc_advFeaturesPanel);
+     	GridBagLayout gbl_advFeaturesPanel = new GridBagLayout();
+     	gbl_advFeaturesPanel.columnWidths = new int[]{30, 0, 0, 0, 25, 0};
+     	gbl_advFeaturesPanel.rowHeights = new int[]{20, 0, 0, 15, 0};
+     	gbl_advFeaturesPanel.columnWeights = new double[]{0.0, 0.0, 4.0, 0.0, 0.0, Double.MIN_VALUE};
+     	gbl_advFeaturesPanel.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
+     	advFeaturesPanel.setLayout(gbl_advFeaturesPanel);
+     	
+     	// Advanced Features Title
+     	JLabel advFeaturesTitle = new JLabel("Advanced Features");
+     	advFeaturesTitle.setFont(new Font("Tahoma", Font.BOLD, 12));
+     	GridBagConstraints gbc_advFeaturesTitle = new GridBagConstraints();
+     	gbc_advFeaturesTitle.anchor = GridBagConstraints.WEST;
+     	gbc_advFeaturesTitle.gridwidth = 3;
+     	gbc_advFeaturesTitle.insets = new Insets(0, 0, 5, 5);
+     	gbc_advFeaturesTitle.gridx = 1;
+     	gbc_advFeaturesTitle.gridy = 1;
+     	advFeaturesPanel.add(advFeaturesTitle, gbc_advFeaturesTitle);
+     	
+     	// Port Label
+     	JLabel portLabel = new JLabel("Port");
+     	GridBagConstraints gbc_portLabel = new GridBagConstraints();
+     	gbc_portLabel.anchor = GridBagConstraints.EAST;
+     	gbc_portLabel.insets = new Insets(0, 0, 5, 5);
+     	gbc_portLabel.gridx = 1;
+     	gbc_portLabel.gridy = 2;
+     	advFeaturesPanel.add(portLabel, gbc_portLabel);
+     	
+     	// Port Field
+     	portField = new JTextField();
+     	portField.setText(((Integer) client.getPort()).toString()); // show the current port
+     	GridBagConstraints gbc_portField = new GridBagConstraints();
+     	gbc_portField.insets = new Insets(0, 0, 5, 5);
+     	gbc_portField.fill = GridBagConstraints.HORIZONTAL;
+     	gbc_portField.gridx = 2;
+     	gbc_portField.gridy = 2;
+     	advFeaturesPanel.add(portField, gbc_portField);
+     	portField.setColumns(10);
+     	
+     	// Port Submit Button
+     	JButton portSubmitButton = new JButton("Set Port");
+     	portSubmitButton.setBackground(DARK_BACKGROUND);
+     	GridBagConstraints gbc_portSubmitButton = new GridBagConstraints();
+     	gbc_portSubmitButton.insets = new Insets(0, 0, 5, 5);
+     	gbc_portSubmitButton.gridx = 3;
+     	gbc_portSubmitButton.gridy = 2;
+     	advFeaturesPanel.add(portSubmitButton, gbc_portSubmitButton);
+     	GridBagConstraints gbc_tp = new GridBagConstraints();
+     	gbc_tp.fill = GridBagConstraints.BOTH;
+     	gbc_tp.gridx = 0;
+     	gbc_tp.gridy = 0;
+     	frame.getContentPane().add(tp, gbc_tp);
+     	portSubmitButton.addActionListener(new ActionListener() {
+        	public void actionPerformed(ActionEvent arg0) {
+        		client.updatePort(portField.getText());
+        	}
+        });
 	}
 
+	/**************************************************************************************************
+     * 
+     * 									  	Helper Methods
+     * 
+     *************************************************************************************************/
+	
 	/**
 	 * Shows an error in the GUI's toast area
 	 */
@@ -374,12 +446,14 @@ public class ClientView implements Runnable {
         toastLabel.setText(success);
 	}
 	
+	/**
+	 * Resets the toaster background and text to default
+	 */
 	public void resetToaster() {
 		toast.setBackground(TOAST_BACKGROUND);
         toastLabel.setText(DEFAULT_TOAST);
 	}
 	
-
 	/**
 	 * Shows a response in the GUI's text pane
 	 */
@@ -388,7 +462,7 @@ public class ClientView implements Runnable {
 		ArrayList<String> s = new ArrayList<String>();
 		ArrayList<String> styles = new ArrayList<String>();
 		
-		// Random subtitle
+		// Random word title at top if required
 		if (isRandom) {
 			s.add("Lucky Term of the Day\n");
 			styles.add("large title");
@@ -398,7 +472,7 @@ public class ClientView implements Runnable {
 	        styles.add("small");
 		}
 		
-		// Title
+		// The word itself
 		s.add(capitalise(word) + "\n");
 		styles.add("title");
 
@@ -423,12 +497,13 @@ public class ClientView implements Runnable {
 		        n++;
 	        }
 	        
+	        // Part of the speech
 	        if (result.getPartOfSpeech().length() > 0) {
 	        	s.add(result.getPartOfSpeech() +"\n");
 	        	styles.add("italic");
 	        }
 	        
-	        // definition
+	        // Definition
 	        if (result.getDefinition().length() > 0) {
 	        	s.add(capitalise(result.getDefinition()) + ".\n");
 	        	styles.add("regular");
@@ -528,7 +603,7 @@ public class ClientView implements Runnable {
 	}
 	
 	/**
-	 * Add some standard styles to the document
+	 * Add some standard styles to the new text document
 	 */
 	private void addStylesToDocument(StyledDocument doc) {
         //Initialize some styles.

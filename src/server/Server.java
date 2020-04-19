@@ -8,16 +8,12 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
-
-import javax.swing.JFrame;
 
 import org.apache.commons.io.FileUtils;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
-import client.ClientView;
 import common.Result; 
   
 /**
@@ -177,24 +173,19 @@ public class Server implements Runnable {
      */
     public synchronized void stopServer() {
 		
-    	workerThreads.shutdown();
-    	
-    	// Close all client sockets
-		for (Socket clientSocket : clientSockets) {
-			try {
-				clientSocket.close();
-			} catch (IOException | NullPointerException e) {
-				view.showError("Error closing client");
-			}
-		}
-
-		try {
+    	try {
+    		workerThreads.shutdown();
+    		
+    		// Close all client sockets
+    		for (Socket clientSocket : clientSockets) {
+    			clientSocket.close();
+    		}
     		serverSocket.close();
     	} catch (IOException | NullPointerException e) {
-    		view.showError("Error closing server");
+    		view.showError("Error stopping server");
     	}
+
 		serverRunning = false;
-    	
     	view.showError("Server stopped.");
     }
     

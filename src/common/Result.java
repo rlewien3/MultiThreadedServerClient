@@ -6,6 +6,16 @@ import java.util.List;
 
 import com.alibaba.fastjson.JSON;
 
+
+/**
+ * A word's definition in a dictionary
+ * (One word can have multiple results, one for each of its meanings)
+ * Designed to fit the JSON parsing methods of FastJSON: https://github.com/alibaba/fastjson
+ * Created by Ryan Lewien
+ * 746528
+ * For Distributed Systems (COMP90015)
+ * The University of Melbourne
+ */
 public class Result {
 
 	private String definition;

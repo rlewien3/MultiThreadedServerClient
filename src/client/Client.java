@@ -9,7 +9,7 @@ import com.alibaba.fastjson.JSON;
 import common.Result; 
  
 /**
- * Multithreaded dictionary client
+ * Dictionary client for use with a multithreaded server
  * Created by Ryan Lewien
  * 746528
  * For Distributed Systems (COMP90015)
@@ -40,13 +40,12 @@ public class Client implements Runnable {
     private DataOutputStream output;
     
     private int port;
-    private String ipAddress;
+    private String ipAddress = "127.0.0.1";
 	
     
-	public Client(int port, String ipAddress) {
+	public Client(int port) {
 		
 		this.port = port;
-		this.ipAddress = ipAddress;
 		view = new ClientView(this);
     }
 	
@@ -54,12 +53,25 @@ public class Client implements Runnable {
     public static void main(String args[]) throws UnknownHostException, IOException { 
     	
     	final int port = 3784;
-    	final String ipAddress = "127.0.0.1";
-    	Client client = new Client(port, ipAddress);
     	
-    	// Start Client behaviour
+    	Client client = new Client(port);
     	client.run();
     }
+    
+    @Override
+    public void run() {
+    	view.run();
+    	clientRunning = true;
+    	connectToServer();
+        readMessages();
+        getRandom(); // get word of the day
+    }
+    
+    /**************************************************************************************************
+     * 
+     * 									  Public Client Methods
+     * 
+     *************************************************************************************************/
     
     /**
      * Query the server for a specific word
@@ -113,12 +125,79 @@ public class Client implements Runnable {
     }
     
     /**
-     * Helper functions
+     *  Attempts to reconnect to the server, starting the client's connections
      */
-    private boolean isEmpty(String word) {
-    	return word.equals("");
+    public void reconnectServer() {
+    	if (clientRunning == false) {
+    		
+    		System.out.println("Reconnecting to server");
+    		connectToServer();
+    		readMessages();
+            getRandom();
+            
+            if (clientRunning) {
+            	view.showSuccess("Reconnected to server!");
+            }
+    	}
     }
     
+    /**
+     * Sets the client's port and reconnects it at the new port
+     */
+    public void updatePort(String portText) {
+    	
+    	int newPort;
+    	try {
+    		newPort = Integer.parseInt(portText);
+    	} catch (NumberFormatException e) {
+    		newPort = -1;
+    	}
+    	
+    	// Make sure new port is valid
+    	if (newPort > 0) {
+    		this.port = newPort;
+    		clientRunning = false;
+    		reconnectServer();
+    	} else {
+    		view.showError("Invalid Port! It must be a number greater than 0.");
+    	}
+    }
+    
+    public int getPort() {
+    	return port;
+    }
+    
+    /**
+     * Checks if client is running
+     */
+    public synchronized boolean isRunning() {
+    	return clientRunning;
+    }
+    
+    /**
+     * Stops the client
+     */
+    public synchronized void stopClient() {
+    	if (clientRunning) {
+    		clientRunning = false;
+        	try {
+        		socket.close();
+        	} catch (IOException | NullPointerException e) {
+        		view.showError("Error closing client");
+        	}
+    	}
+    	System.out.println("Client stopped.");
+    }
+    
+    /**************************************************************************************************
+     * 
+     * 									  	Helper Methods
+     * 
+     *************************************************************************************************/
+    
+    /**
+     * Sends a generic message to the server
+     */
     private void send(String msg) {
         
         try { 
@@ -131,19 +210,16 @@ public class Client implements Runnable {
         }
     }
     
-    @Override
-    public void run() {
-    	view.run();
-    	clientRunning = true;
-    	connectToServer();
-        readMessages();
-        getRandom(); // get word of the day
-    }
-    
     /**
      * Connects the client to the server
      */
     private void connectToServer() {
+    	
+    	// Check port is valid
+    	if (port <= 0) {
+        	view.showError("Port number is invalid! Try another.");
+        	return;
+        }
     	
     	// get the IP
     	try {
@@ -177,23 +253,6 @@ public class Client implements Runnable {
     }
     
     /**
-     *  Attempts to reconnect to the server, starting the client's connections
-     */
-    public void reconnectServer() {
-    	if (clientRunning == false) {
-    		
-    		System.out.println("Reconnecting to server");
-    		connectToServer();
-    		readMessages();
-            getRandom();
-            
-            if (clientRunning) {
-            	view.showSuccess("Reconnected to server!");
-            }
-    	}
-    }
-    
-    /**
      * Reads messages from input
      */
     private void readMessages () {
@@ -220,7 +279,7 @@ public class Client implements Runnable {
     }
     
     /**
-     * Determines how to react to a message
+     * Determines how to react to a message read in
      */
     private void directMessage(String message) {
 
@@ -257,25 +316,7 @@ public class Client implements Runnable {
         }
     }
     
-    /**
-     * Checks if client is running
-     */
-    public synchronized boolean isRunning() {
-    	return clientRunning;
-    }
-    
-    /**
-     * Stops the client
-     */
-    public synchronized void stopClient() {
-    	if (clientRunning) {
-    		clientRunning = false;
-        	try {
-        		socket.close();
-        	} catch (IOException | NullPointerException e) {
-        		view.showError("Error closing client");
-        	}
-    	}
-    	System.out.println("Client stopped.");
+    private boolean isEmpty(String word) {
+    	return word.equals("");
     }
 }
