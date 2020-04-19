@@ -111,12 +111,9 @@ public class ServerView implements Runnable {
      				powerButton.setText("Start Server");
      			} else {
      				// turn on the server
-     				server.setPort(Integer.parseInt(portField.getText()));
+     				server.setPort(portField.getText());
          			server.setDictLocation(dictPathField.getText());
          			server.startServer();
-         			powerButton.setText("Stop Server");
-     				portField.setEditable(false);
-     				dictPathField.setEditable(false);
      			}
      		}
      	});
@@ -215,5 +212,12 @@ public class ServerView implements Runnable {
 	public void resetToaster() {
 		toast.setBackground(TOAST_BACKGROUND);
         toastLabel.setText(DEFAULT_TOAST);
+	}
+	
+	public void showRunning() {
+		powerButton.setText("Stop Server");
+		portField.setEditable(false);
+		dictPathField.setEditable(false);
+		showSuccess("Server Running!");
 	}
 }

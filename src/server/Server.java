@@ -63,8 +63,12 @@ public class Server implements Runnable {
     }
     
     
-    public void setPort(int port) {
-    	this.port = port;
+    public void setPort(String portText) {
+    	try {
+    		this.port = Integer.parseInt(portText);
+    	} catch (NumberFormatException e) {
+    		this.port = -1;
+    	}
     }
     
     public void setDictLocation(String dictLocation) {
@@ -74,7 +78,6 @@ public class Server implements Runnable {
     
     @Override
     public void run() {
-
     	view.run();
     }
     
@@ -83,6 +86,12 @@ public class Server implements Runnable {
      */
     public void startServer() {
     	
+    	// check port is valid
+    	if (port <= 0) {
+        	view.showError("Port number is invalid! Try another.");
+        	return;
+        }
+    	
     	// Read in dictionary
         dictionary = readDict(dictLocation);
         if (dictionary == null) {
@@ -90,11 +99,11 @@ public class Server implements Runnable {
         	return;
         }
         view.showSuccess("Read dictionary!");
-    	
+        
     	serverRunning = true;
     	openServerSocket();
     	delegateRequests();
-    	view.showSuccess("Server Running!");
+    	view.showRunning();
     }
     
     
