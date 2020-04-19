@@ -70,8 +70,6 @@ public class Client implements Runnable {
     		return;
     	}
     	
-    	view.showInitialResult("Word: " + query + "\n");
-    	
     	System.out.println("Sending query to server:" + query);
     	send(QUERY + query);
     }

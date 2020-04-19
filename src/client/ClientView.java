@@ -6,12 +6,14 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
+import javax.swing.text.MutableAttributeSet;
 import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyleContext;
@@ -31,7 +33,8 @@ public class ClientView implements Runnable {
 	
 	private JFrame frame;
 	private JTextField queryField;
-	private JTextArea textArea;
+	private JTextPane textPane;
+	private JScrollPane scrollPane;
 	
 	private JTextField addField;
 	private JTextField descriptionField;
@@ -122,40 +125,21 @@ public class ClientView implements Runnable {
         queryButton.addActionListener(new ActionListener() {
         	public void actionPerformed(ActionEvent arg0) {
         		System.out.println("Query button clicked!");
-        		textArea.setText("");
         		client.sendQuery(queryField.getText());
         		queryField.setText("");
         	}
         });
         
         
+        textPane = new JTextPane();
+        
 
-        JTextPane textPane = createTextPane();
-        textPane.setEditable(false);
-        textPane.setBorder(new EmptyBorder(10,10,10,10));
-        textPane.setBackground(new Color(41, 43, 45));
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.anchor = GridBagConstraints.WEST;
         constraints.fill = GridBagConstraints.VERTICAL;
         constraints.gridy = 1;
         
-        
-        JTextPane textPane2 = createTextPane();
-        textPane2.setEditable(false);
-        textPane2.setBorder(new EmptyBorder(10,10,10,10));
-        GridBagConstraints constraints2 = new GridBagConstraints();
-        constraints2.anchor = GridBagConstraints.WEST;
-        constraints2.fill = GridBagConstraints.VERTICAL;
-        constraints2.gridy = 1;
-        
-        JPanel allResults = new JPanel();
-        allResults.setLayout(new BoxLayout(allResults, BoxLayout.Y_AXIS));
-        allResults.add(textPane, constraints);
-        allResults.add(textPane2, constraints2);
-        allResults.add(Box.createVerticalGlue());
-        
-        
-        JScrollPane scrollPane = new JScrollPane();
+        scrollPane = new JScrollPane();
         scrollPane.setBorder(new EmptyBorder(0,0,0,0));
         GridBagConstraints gbc_scrollPane = new GridBagConstraints();
         gbc_scrollPane.insets = new Insets(0, 0, 5, 5);
@@ -163,13 +147,10 @@ public class ClientView implements Runnable {
         gbc_scrollPane.fill = GridBagConstraints.BOTH;
         gbc_scrollPane.gridx = 1;
         gbc_scrollPane.gridy = 4;
-        scrollPane.setViewportView(allResults);
-        
+        scrollPane.setViewportView(textPane);
         
         searchPanel.add(scrollPane, gbc_scrollPane);
-        
-        
-        
+
         
         /** Edit Panel **/
         JPanel editPanel = new JPanel();
@@ -240,7 +221,6 @@ public class ClientView implements Runnable {
         addButton.addActionListener(new ActionListener() {
         	public void actionPerformed(ActionEvent arg0) {
         		System.out.println("Add button clicked!");
-        		textArea.setText("");
         		client.addWord(addField.getText(), descriptionField.getText());
         		addField.setText("");
         	}
@@ -277,9 +257,8 @@ public class ClientView implements Runnable {
         removeButton.addActionListener(new ActionListener() {
         	public void actionPerformed(ActionEvent arg0) {
         		System.out.println("Remove button clicked!");
-        		textArea.setText("");
         		client.removeWord(removeField.getText());
-        		addField.setText("");
+        		removeField.setText("");
         	}
         });
                 
@@ -287,17 +266,6 @@ public class ClientView implements Runnable {
         // Put panels together on the frame
      	JTabbedPane tp = new JTabbedPane();   
      	tp.add("Search", searchPanel);
-     	
-     
-     	
-     	// Search result area
-     	textArea = new JTextArea();
-     	GridBagConstraints gbc_textArea = new GridBagConstraints();
-     	gbc_textArea.insets = new Insets(0, 0, 0, 5);
-     	gbc_textArea.gridx = 1;
-     	gbc_textArea.gridy = 6;
-     	searchPanel.add(textArea, gbc_textArea);
-     	textArea.setRows(10);
      	tp.add("Edit", editPanel);
      	
      	GridBagConstraints gbc_tp = new GridBagConstraints();
@@ -341,68 +309,6 @@ public class ClientView implements Runnable {
         toastLabel.setText(success);
 	}
 	
-	public void showInitialResult(String word) {
-		textArea.append(word);
-	}
-	
-	/**
-	 * Shows a response in the GUI's text area DELETE IN FINAL
-	 */
-	public void showResults(List<Result> results) {
-		
-		int i = 1;
-		for (Result result : results) {
-			textArea.append("Definition " + i + ": " + result.getDefinition() + "\n");
-			
-			if (result.getPartOfSpeech().length() > 0) {
-				textArea.append("Part of Speech: " + result.getPartOfSpeech());
-			}
-			
-			// Synonyms
-			if (result.getSynonyms().size() > 0) {
-				textArea.append("\nSynonyms: ");
-				for (String synonym : result.getSynonyms()) {
-					textArea.append(synonym + ", ");
-				}
-			}
-			
-			// Type of
-			if (result.getTypeOf().size() > 0) {
-				textArea.append("\nType of: ");
-				for (String typeOf : result.getTypeOf()) {
-					textArea.append(typeOf + ", ");
-				}
-			}
-			
-			// Has types
-			if (result.getHasTypes().size() > 0) {
-				textArea.append("\nHas Types: ");
-				for (String hasTypes : result.getHasTypes()) {
-					textArea.append(hasTypes + ", ");
-				}
-			}
-			
-			// Derivations
-			if (result.getDerivation().size() > 0) {
-				textArea.append("\nDerivations: ");
-				for (String derivation : result.getDerivation()) {
-					textArea.append(derivation + ", ");
-				}
-			}
-			
-			// Examples
-			if (result.getExamples().size() > 0) {
-				textArea.append("\nExamples: ");
-				for (String example : result.getExamples()) {
-					textArea.append(example + ", ");
-				}
-			}
-			
-			textArea.append("\n\n");
-			i++;
-		}
-	}
-	
 	/**
 	 * Shows a response in the GUI's toast area DELETE IN FINAL
 	 */
@@ -416,51 +322,100 @@ public class ClientView implements Runnable {
         toastLabel.setText(DEFAULT_TOAST);
 	}
 	
-	private JTextPane createTextPane() {
-        String[] initString =
-                { "Definition 1\n",            //regular
-                  "This is what the word means, blah, blah, blah...\n", //italic
-                  "Noun\n",                                    //bold
-                  "\nSynonyms: ",                                      //small
-                  "blah, blah, blah, blah\n",                                //large
-                  "It is a type of: ",    //regular
-                  "raspberry, dog, cat, animal\n",                                          //button
-                  "It has the types: ",         //regular
-                  "ajdsfkigs, fgsafss, shsgfhsr\n",                                          //icon
-                  "Derivation: ", // bold
-                  "latin, barnyard\n",
-                  "\nExamples:\n",
-                  "Little shdksdb svnjkss shgusdk vshusfvsbhj sfjkslf sushukjnsfhbjuls\n" +
-                  "Little shdksdb svnjkss shgusdk vshusfvsbhj sfjkslf sushukjnsfhbjuls\n"
-                 };
- 
-        String[] initStyles =
-                { "bold large", "regular", "italic", "bold", "regular",
-                  "bold", "regular", "bold", "regular", "bold", "regular", "bold", "italic"
-                };
- 
-        JTextPane textPane = new JTextPane() {
+	/**
+	 * Shows a response in the GUI's text pane
+	 */
+	public void showResults(List<Result> results) {
+        
+		ArrayList<String> s = new ArrayList<String>();
+		ArrayList<String> styles = new ArrayList<String>();
+		
+		// Collect results together
+		int n = 1;
+		for (Result result : results) {
+			// title
+	        s.add("Definition " + n + "\n");
+	        styles.add("bold large");
+	        n++;
+	        
+	        // definition
+	        if (result.getDefinition().length() > 0) {
+	        	s.add(result.getDefinition() + "\n");
+	        	styles.add("regular");
+	        }
+	        
+	        if (result.getPartOfSpeech().length() > 0) {
+	        	s.add(result.getPartOfSpeech() + "\n");
+	        	styles.add("italic");
+	        }
+	        
+	        // Separator
+	        s.add("\n");
+	        styles.add("regular");
+	        
+	        // Synonyms
+	        if (result.getSynonyms().size() > 0) {
+		        s.add("Synonyms: ");
+		        styles.add("bold");
+		        s.add(collectStrings(result.getSynonyms()));
+		        styles.add("regular");
+	        }
+		    
+	        // Type of
+	        if (result.getTypeOf().size() > 0) {
+		        s.add("It is a type of: ");
+		        styles.add("bold");
+		        s.add(collectStrings(result.getTypeOf()));
+		        styles.add("regular");
+	        }
+	        
+	        // Has Types
+	        if (result.getHasTypes().size() > 0) {
+		        s.add("It has the types: ");
+		        styles.add("bold");
+		        s.add(collectStrings(result.getHasTypes()));
+		        styles.add("regular");
+	        }
+		    
+	        // Examples
+	        if (result.getExamples().size() > 0) {
+		        s.add("\nExamples: \n");
+		        styles.add("bold");
+		        s.add(collectStrings(result.getExamples()));
+		        styles.add("italic");
+	        }
+	        
+	        // Result separator
+	        s.add("\n\n\n");
+	        styles.add("regular");
+		}
 
-			private static final long serialVersionUID = 8284552836796875970L;
-
-			@Override
-			public boolean getScrollableTracksViewportWidth() {
-        		return true;}
-        	};
+        textPane.setText("");
+        MutableAttributeSet mas = textPane.getInputAttributes();
+        mas.removeAttributes(mas);
+        
         StyledDocument doc = textPane.getStyledDocument();
         addStylesToDocument(doc);
+        
  
         try {
-            for (int i=0; i < initString.length; i++) {
-                doc.insertString(doc.getLength(), initString[i],
-                                 doc.getStyle(initStyles[i]));
+            for (int i=0; i < s.size(); i++) {
+                doc.insertString(doc.getLength(), s.get(i),
+                                 doc.getStyle(styles.get(i)));
             }
         } catch (BadLocationException ble) {
             System.err.println("Couldn't insert initial text into text pane.");
         }
- 
-        return textPane;
     }
+	
+	private String collectStrings(List<String> strings) {
+		
+		String collector = "";
+        for (String s : strings) {
+        	collector = collector + s + ", ";
+        }
+        return collector + "\n";
+	}
 	
 	/**
 	 * Add some standard styles to the document
