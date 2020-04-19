@@ -24,12 +24,13 @@ import com.bulenkov.darcula.DarculaLaf;
 import server.Result;
 import java.awt.Font;
 import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
 
 public class ClientView implements Runnable {
 
 	private final String DEFAULT_TOAST = "Pocket Dictionary";
+	private final Color STD_BACKGROUND = new Color(60, 63, 65);
+	private final Color LIGHT_BACKGROUND = new Color(69, 73, 74);
+	private final Color TOAST_BACKGROUND = new Color(45, 49, 50);
 	
 	private JFrame frame;
 	
@@ -80,7 +81,7 @@ public class ClientView implements Runnable {
 		// Total frame of program
 		frame = new JFrame();
 		frame.setTitle(DEFAULT_TOAST);
-		frame.setBounds(100, 100, 365, 380);
+		frame.setBounds(100, 100, 365, 420);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		GridBagLayout gridBagLayout = new GridBagLayout();
      	gridBagLayout.columnWidths = new int[]{497, 0};
@@ -92,44 +93,57 @@ public class ClientView implements Runnable {
      	
 		/** Search Tab **/
         searchPanel = new JPanel();
+        searchPanel.setBackground(LIGHT_BACKGROUND);
         GridBagLayout gbl_searchPanel = new GridBagLayout();
-        gbl_searchPanel.columnWidths = new int[]{20, 203, 0, 15, 0};
-        gbl_searchPanel.rowHeights = new int[]{25, 17, 0, 10, 150, 30, 20};
-        gbl_searchPanel.columnWeights = new double[]{1.0, 5.0, 0.0, 1.0, Double.MIN_VALUE};
-        gbl_searchPanel.rowWeights = new double[]{1.0, 0.0, 0.0, 0.0, 20.0, 0.0, 1.0};
+        gbl_searchPanel.columnWidths = new int[]{20, 230, 80, 15, 0};
+        gbl_searchPanel.rowHeights = new int[]{70, 6, 150, 30, 10};
+        gbl_searchPanel.columnWeights = new double[]{1.0, 10.0, 0.0, 1.0, Double.MIN_VALUE};
+        gbl_searchPanel.rowWeights = new double[]{1.0, 1.0, 20.0, 0.0, 1.0};
         searchPanel.setLayout(gbl_searchPanel);
+        
+        JPanel panel = new JPanel();
+        panel.setBackground(STD_BACKGROUND);
+        GridBagConstraints gbc_panel = new GridBagConstraints();
+        gbc_panel.gridwidth = 4;
+        gbc_panel.insets = new Insets(0, 0, 5, 0);
+        gbc_panel.fill = GridBagConstraints.BOTH;
+        gbc_panel.gridx = 0;
+        gbc_panel.gridy = 0;
+        searchPanel.add(panel, gbc_panel);
+        GridBagLayout gbl_panel = new GridBagLayout();
+        gbl_panel.columnWidths = new int[]{20, 230, 80, 15, 0};
+        gbl_panel.rowHeights = new int[]{30, 0, 0, 10, 0};
+        gbl_panel.columnWeights = new double[]{1.0, 10.0, 0.0, 1.0, Double.MIN_VALUE};
+        gbl_panel.rowWeights = new double[]{1.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
+        panel.setLayout(gbl_panel);
         
         // Search title
         JLabel searchTitle = new JLabel("What're you lookin for?");
-        searchTitle.setFont(new Font("Tahoma", Font.BOLD, 14));
         GridBagConstraints gbc_searchTitle = new GridBagConstraints();
         gbc_searchTitle.anchor = GridBagConstraints.WEST;
-        gbc_searchTitle.gridwidth = 2;
-        gbc_searchTitle.gridheight = 1;
         gbc_searchTitle.insets = new Insets(0, 0, 5, 5);
         gbc_searchTitle.gridx = 1;
         gbc_searchTitle.gridy = 1;
-        searchPanel.add(searchTitle, gbc_searchTitle);
+        panel.add(searchTitle, gbc_searchTitle);
+        searchTitle.setFont(new Font("Tahoma", Font.BOLD, 14));
         
         // Search query field
         queryField = new JTextField();
         GridBagConstraints gbc_queryField = new GridBagConstraints();
-        gbc_queryField.fill = GridBagConstraints.HORIZONTAL;
-        gbc_queryField.gridheight = 1;
         gbc_queryField.insets = new Insets(0, 0, 5, 5);
+        gbc_queryField.fill = GridBagConstraints.HORIZONTAL;
         gbc_queryField.gridx = 1;
         gbc_queryField.gridy = 2;
-        searchPanel.add(queryField, gbc_queryField);
+        panel.add(queryField, gbc_queryField);
         
         // Search query submit button
         JButton queryButton = new JButton("Search");
         GridBagConstraints gbc_queryButton = new GridBagConstraints();
         gbc_queryButton.fill = GridBagConstraints.HORIZONTAL;
-        gbc_queryButton.gridheight = 1;
         gbc_queryButton.insets = new Insets(0, 0, 5, 5);
         gbc_queryButton.gridx = 2;
         gbc_queryButton.gridy = 2;
-        searchPanel.add(queryButton, gbc_queryButton);
+        panel.add(queryButton, gbc_queryButton);
         queryButton.addActionListener(new ActionListener() {
         	public void actionPerformed(ActionEvent arg0) {
         		System.out.println("Query button clicked!");
@@ -140,6 +154,7 @@ public class ClientView implements Runnable {
         
         // Search results text pane
         textPane = new JTextPane();
+        textPane.setBackground(LIGHT_BACKGROUND);
         textPane.setEditable(false);
         
         scrollPane = new JScrollPane();
@@ -149,7 +164,7 @@ public class ClientView implements Runnable {
         gbc_scrollPane.gridwidth = 2;
         gbc_scrollPane.fill = GridBagConstraints.BOTH;
         gbc_scrollPane.gridx = 1;
-        gbc_scrollPane.gridy = 4;
+        gbc_scrollPane.gridy = 2;
         scrollPane.setViewportView(textPane);
         searchPanel.add(scrollPane, gbc_scrollPane);
 
@@ -275,12 +290,13 @@ public class ClientView implements Runnable {
      	tp.add("Search", searchPanel);
      	
      	JButton randomButton = new JButton("Feeling lucky?");
+     	randomButton.setBackground(LIGHT_BACKGROUND);
      	GridBagConstraints gbc_randomButton = new GridBagConstraints();
      	gbc_randomButton.fill = GridBagConstraints.HORIZONTAL;
      	gbc_randomButton.gridwidth = 2;
      	gbc_randomButton.insets = new Insets(0, 0, 5, 5);
      	gbc_randomButton.gridx = 1;
-     	gbc_randomButton.gridy = 5;
+     	gbc_randomButton.gridy = 3;
      	searchPanel.add(randomButton, gbc_randomButton);
      	tp.add("Edit", editPanel);
      	randomButton.addActionListener(new ActionListener() {
@@ -335,12 +351,12 @@ public class ClientView implements Runnable {
 	 * Shows a response in the GUI's toast area DELETE IN FINAL
 	 */
 	public void showResponse(String response) {
-		toast.setBackground(new Color(41, 43, 45));
+		toast.setBackground(TOAST_BACKGROUND);
         toastLabel.setText(response);
 	}
 	
 	public void resetToaster() {
-		toast.setBackground(new Color(41, 43, 45));
+		toast.setBackground(TOAST_BACKGROUND);
         toastLabel.setText(DEFAULT_TOAST);
 	}
 	
