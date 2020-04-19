@@ -29,24 +29,22 @@ import common.Result;
 public class Server implements Runnable { 
    
 	private final int poolSize = 200;
-	private int port = 0;
-	private String ipAddress;
+	private final String ipAddress = "127.0.0.1";
+	private String dictLocation;
+	private int port;
+	
+	private ExecutorService workerThreads = Executors.newFixedThreadPool(poolSize);
 	private Thread acceptClients;
 	
-	private String dictLocation;
+	private boolean serverRunning;
 	
 	private ServerSocket serverSocket = null;
 	private Socket clientSocket;
-	private boolean serverRunning;
-	
 	private ConcurrentHashMap<String, List<Result>> dictionary;
-	protected ExecutorService workerThreads = Executors.newFixedThreadPool(poolSize);
-	
 	private ServerView view;
 	
-    public Server(String ipAddress) {
-    	
-    	this.ipAddress = ipAddress;
+	
+    public Server() {
     	serverRunning = false;
     	view = new ServerView(this);
     }
@@ -54,14 +52,17 @@ public class Server implements Runnable {
     
     public static void main(String[] args) throws IOException { 
 
-    	// to be command line arguments later?
-    	final String ipAddress = "127.0.0.1";
-    	
     	System.out.println("SERVER\n");
-    	Server server = new Server(ipAddress);
+    	Server server = new Server();
     	server.run();
     }
     
+    
+    /**************************************************************************************************
+     * 
+     * 										 Public Methods
+     * 
+     *************************************************************************************************/
     
     public void setPort(String portText) {
     	try {
@@ -82,84 +83,29 @@ public class Server implements Runnable {
     }
     
     /**
-     * Starts the server
+     * Starts the server, relies on port and dictionary location already being set
      */
     public void startServer() {
     	
-    	// check port is valid
+    	// Check port is valid
     	if (port <= 0) {
         	view.showError("Port number is invalid! Try another.");
         	return;
         }
     	
-    	// Read in dictionary
+    	// Read in dictionary, if valid
         dictionary = readDict(dictLocation);
         if (dictionary == null) {
         	view.showError("Failed reading the dictionary at that path. Try another!");
         	return;
         }
-        view.showSuccess("Read dictionary!");
         
-    	serverRunning = true;
-    	openServerSocket();
-    	delegateRequests();
-    	view.showRunning();
-    }
-    
-    
-    /**
-     * Opens the server socket at a specified port and ip address
-     */
-    private void openServerSocket() {
-    	
-    	// Get ip address
-    	InetAddress ip = null;
-		try {
-			ip = InetAddress.getByName(ipAddress);
-		} catch (UnknownHostException e) {
-			view.showError("IPAddress not allowed.");
-		}
-    	
-    	// create server socket if port isn't used
-    	try {
-        	serverSocket = new ServerSocket(port, 100, ip); 
-        } catch (BindException be) {
-        	view.showError("Port is already being used.");
-        } catch (IOException ioe) {
-        	view.showError("ServerSocket was not able to be created.");
-        }
-    }
-    
-    
-    /**
-     * Delegates requests to worker threads.
-     */
-    private void delegateRequests() {
-    	// running infinite loop for getting client request 
-    	
-    	Server server = this;
-        
-    	acceptClients = new Thread(new Runnable() { 
-            
-        	@Override
-            public void run() { 
-        		while (isRunning()) {
-                	try {
-        	        	// Accept the incoming request 
-        	            clientSocket = serverSocket.accept();
-        	            System.out.println("New client request received: " + clientSocket); 
-        	            
-        	            // Create a new handler object for handling this request.
-        	            workerThreads.execute(new WorkerRunnable(clientSocket, server));
-        	            
-                	} catch (IOException ioe) {
-                		System.out.println("Exception found on accept. Ignoring.");
-                	}
-                }
-                stopServer();
-            }
-        });
-        acceptClients.start();
+    	if (openServerSocket()) {
+    		// Server socket is open!
+    		serverRunning = true;
+    		delegateRequests();
+    		view.showRunning();
+    	};
     }
     
     /**
@@ -212,9 +158,46 @@ public class Server implements Runnable {
     }
     
     /**
+     * Checks if server is running
+     */
+    public synchronized boolean isRunning() {
+    	return serverRunning;
+    }
+    
+    /**
+     * Stops the server
+     * @return 
+     */
+    public synchronized void stopServer() {
+    	if (serverRunning) {
+    		try {
+				clientSocket.close();
+			} catch (IOException | NullPointerException e) {
+				view.showError("Error closing client");
+			}
+    		
+    		try {
+        		serverSocket.close();
+        	} catch (IOException | NullPointerException e) {
+        		view.showError("Error closing server");
+        	}
+    		serverRunning = false;
+    		workerThreads.shutdownNow();
+    	}
+    	view.showError("Server stopped.");
+    }
+    
+    
+    /**************************************************************************************************
+     * 
+     * 										Helper Methods
+     * 
+     *************************************************************************************************/
+    
+    /**
      * Reads a dictionary file at a specified dataPath
      */
-    public ConcurrentHashMap<String, List<Result>> readDict(String dataPath) {
+    private ConcurrentHashMap<String, List<Result>> readDict(String dataPath) {
 		
     	File dataFile = FileUtils.getFile(dataPath);
 		
@@ -242,28 +225,65 @@ public class Server implements Runnable {
 	    return dictionary;
 	}
     
-    /**
-     * Checks if server is running
-     */
-    public synchronized boolean isRunning() {
-    	return serverRunning;
-    }
     
     /**
-     * Stops the server
-     * @return 
+     * Opens the server socket at a specified port and ip address
+     * Returns whether it succeeds
      */
-    public synchronized void stopServer() {
-    	if (serverRunning) {
-    		serverRunning = false;
-    		workerThreads.shutdownNow();
-    		// acceptClients.shutdown();
-        	try {
-        		serverSocket.close();
-        	} catch (IOException e) {
-        		view.showError("Error closing server");
-        	}
-    	}
-    	view.showError("Server stopped.");
+    private boolean openServerSocket() {
+    	
+    	// Get ip address
+    	InetAddress ip = null;
+		try {
+			ip = InetAddress.getByName(ipAddress);
+		} catch (UnknownHostException e) {
+			view.showError("IPAddress not allowed.");
+			return false;
+		}
+    	
+    	// create server socket if port isn't used
+    	try {
+        	serverSocket = new ServerSocket(port, 100, ip); 
+        } catch (BindException be) {
+        	view.showError("Port is already being used.");
+        	return false;
+        } catch (IOException ioe) {
+        	view.showError("ServerSocket was not able to be created.");
+        	return false;
+        }
+    	
+    	return true;
     }
-} 
+    
+    
+    /**
+     * Delegates requests to worker threads.
+     */
+    private void delegateRequests() {
+
+    	Server server = this;
+    	acceptClients = new Thread() {
+    		
+    		@Override
+    	    public void run() { 
+
+    	        while (isRunning()) {
+    	            try { 
+    	            	// Accept the incoming request 
+    		            clientSocket = serverSocket.accept();
+    		            System.out.println("New client request received: " + clientSocket);  
+    	            } catch (SocketException e){ 
+    	                Thread.currentThread().interrupt();
+    	                System.out.println("Thread was interrupted, Failed to complete operation");
+    	            } catch (IOException ioe) {
+    	        		System.out.println("Exception found on accept. Ignoring.");
+    	        	}
+    	            
+    	            // Create a new handler object for handling this request.
+    	            workerThreads.execute(new WorkerRunnable(clientSocket, server));
+    	         } 
+    	    }
+    	};
+        acceptClients.start();
+    }
+}

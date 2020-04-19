@@ -33,8 +33,6 @@ class WorkerRunnable implements Runnable {
 	private static final String REMOVE = "DEL";
 	private static final String RANDOM = "RDM"; // to ask for a random word
 	private static final String SEPARATOR = "~~~"; // to separate two arguments in an add query
-	private static final String PROTOCOL_INSTRUCTIONS = "Begin with either " + QUERY + ", " + ADD + " or " + REMOVE + " and then follow with your word/ definition. ";
-	private static final String ADD_PROTOCOL_INSTRUCTIONS = "The correct form is <word>" + SEPARATOR + "<new definition>.";
 	// server side
 	private static final String ERROR = "ERR ";
 	private static final String SUCCESS = "OK ";
@@ -75,16 +73,18 @@ class WorkerRunnable implements Runnable {
 	    	try { 
 	            received = input.readUTF(); 
 	            System.out.println("Received: " + received);
-	    	} catch (SocketException se) {
-	        	System.out.println("Client closed without quitting. Closing worker. ");
+	    	
+	         // close the worker input and output if unable to receive
+	    	} catch (IOException se) {
+	    		System.out.println("Closing worker. ");
+	        	try {
+					input.close();
+					output.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 	        	return;
-	    	} catch (EOFException eofe) {
-	    		System.out.println("Worker forced to close.");
-	        	return;
-	    	} catch (IOException e) {
-	            e.printStackTrace();
-	            return;
-	        }
+	    	}
 	        
 	        String reply = null;
 	        
@@ -114,10 +114,10 @@ class WorkerRunnable implements Runnable {
 		            	reply = removeWord(message);
 		            
 		            } else {
-		            	reply = ERROR + "Invalid query! " + PROTOCOL_INSTRUCTIONS;
+		            	reply = ERROR + "Invalid query!";
 		            }
 		        } else {
-		        	reply = ERROR + "Invalid query! " + PROTOCOL_INSTRUCTIONS; 
+		        	reply = ERROR + "Invalid query!"; 
 		        }
 		    }
 	        
@@ -130,6 +130,12 @@ class WorkerRunnable implements Runnable {
 			}
     	}
     }
+    
+    /**************************************************************************************************
+     * 
+     * 										Helper Methods
+     * 
+     *************************************************************************************************/
     
     private String queryWord(String word) {
     	System.out.println("Looking for " + word + " in dictionary...");
@@ -170,7 +176,7 @@ class WorkerRunnable implements Runnable {
         		return ERROR + "Dictionary already contains the word \"" + word + "\"";
         	}
     	} else {
-    		return ERROR + "Invalid adding query! " + ADD_PROTOCOL_INSTRUCTIONS;
+    		return ERROR + "Invalid adding query!";
     	}
     }
     
