@@ -10,6 +10,7 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,6 +29,7 @@ class WorkerRunnable implements Runnable {
 	private static final String QUERY = "GET";
 	private static final String ADD = "PUT";
 	private static final String REMOVE = "DEL";
+	private static final String RANDOM = "RDM"; // to ask for a random word
 	private static final String SEPARATOR = "~~~"; // to separate two arguments in an add query
 	private static final String PROTOCOL_INSTRUCTIONS = "Begin with either " + QUERY + ", " + ADD + " or " + REMOVE + " and then follow with your word/ definition. ";
 	private static final String ADD_PROTOCOL_INSTRUCTIONS = "The correct form is <word>" + SEPARATOR + "<new definition>.";
@@ -81,41 +83,40 @@ class WorkerRunnable implements Runnable {
 	            return;
 	        }
 	        
-	    	// close server
-	        if (received.equals("QUIT")) {
-	        	server.stop();
-	        	break;
-	        }
-	        
 	        String reply = null;
 	        
-	        // break the string into command and recipient part
-	        String[] splitReceived = received.split(" ", 2);
-	        if (splitReceived.length == 2) {
-	        	
-	        	String command = splitReceived[0];
-	            String message = splitReceived[1].toLowerCase();
-	            
-	            // handle queries
-	            if (command.equals(QUERY)) {
-	            	reply = queryWord(message);
-	            }
-	            
-	            // handle additions
-	            else if (command.equals(ADD)) {
-	            	reply = addWord(message);
-	            }
-	            
-	            // handle removals
-	            else if (command.equals(REMOVE)) {
-	            	reply = removeWord(message);
-	            	
-	            } else {
-	            	reply = ERROR + "Invalid query! " + PROTOCOL_INSTRUCTIONS;
-	            }
+	        // handle random word requests (single word request)
+	        if (received.equals(RANDOM)) {
+	        	reply = randomWord();
 	        } else {
-	        	reply = ERROR + "Invalid query! " + PROTOCOL_INSTRUCTIONS; 
-	        }
+	        	// handle multiple word requests
+		        String[] splitReceived = received.split(" ", 2);
+		        if (splitReceived.length == 2) {
+		        	
+		        	String command = splitReceived[0];
+		            String message = splitReceived[1].toLowerCase();
+		            
+		            // handle queries
+		            if (command.equals(QUERY)) {
+		            	reply = queryWord(message);
+		            }
+		            
+		            // handle additions
+		            else if (command.equals(ADD)) {
+		            	reply = addWord(message);
+		            }
+		            
+		            // handle removals
+		            else if (command.equals(REMOVE)) {
+		            	reply = removeWord(message);
+		            
+		            } else {
+		            	reply = ERROR + "Invalid query! " + PROTOCOL_INSTRUCTIONS;
+		            }
+		        } else {
+		        	reply = ERROR + "Invalid query! " + PROTOCOL_INSTRUCTIONS; 
+		        }
+		    }
 	        
 	        // Send reply
 	        try {
@@ -130,7 +131,7 @@ class WorkerRunnable implements Runnable {
     private String queryWord(String word) {
     	System.out.println("Looking for " + word + " in dictionary...");
     	if (server.getDictionary().containsKey(word)) {
-    		return QUERY_RESPONSE + server.getDictionary().get(word).toString();
+    		return QUERY_RESPONSE + server.getDictionary().get(word).toString(); // send word as well
     	} else {
     		return ERROR + "\"" + word + "\" not found in the dictionary. Try a different word!";
     	}
@@ -174,5 +175,19 @@ class WorkerRunnable implements Runnable {
     		server.getDictionary().remove(word);
     		return SUCCESS + word + " successfully removed to the dictionary!";
     	}
+    }
+    
+    private String randomWord() {
+    	
+    	System.out.println("Getting random word!");
+    	
+    	// get a random word from the dictionary
+    	List<String> keysAsArray = new ArrayList<String>(server.getDictionary().keySet());
+    	Random r = new Random();
+    	String word = keysAsArray.get(r.nextInt(keysAsArray.size()));
+    	
+    	String result = queryWord(word);
+    	
+    	return result; // put in word as well
     }
 }

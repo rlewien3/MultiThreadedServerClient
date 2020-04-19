@@ -94,9 +94,9 @@ public class ClientView implements Runnable {
         searchPanel = new JPanel();
         GridBagLayout gbl_searchPanel = new GridBagLayout();
         gbl_searchPanel.columnWidths = new int[]{20, 203, 0, 15, 0};
-        gbl_searchPanel.rowHeights = new int[]{25, 17, 0, 10, 150, 20};
+        gbl_searchPanel.rowHeights = new int[]{25, 17, 0, 10, 150, 30, 20};
         gbl_searchPanel.columnWeights = new double[]{1.0, 5.0, 0.0, 1.0, Double.MIN_VALUE};
-        gbl_searchPanel.rowWeights = new double[]{1.0, 0.0, 0.0, 0.0, 20.0, 1.0};
+        gbl_searchPanel.rowWeights = new double[]{1.0, 0.0, 0.0, 0.0, 20.0, 0.0, 1.0};
         searchPanel.setLayout(gbl_searchPanel);
         
         // Search title
@@ -116,7 +116,7 @@ public class ClientView implements Runnable {
         GridBagConstraints gbc_queryField = new GridBagConstraints();
         gbc_queryField.fill = GridBagConstraints.HORIZONTAL;
         gbc_queryField.gridheight = 1;
-        gbc_queryField.insets = new Insets(0, 0, 0, 5);
+        gbc_queryField.insets = new Insets(0, 0, 5, 5);
         gbc_queryField.gridx = 1;
         gbc_queryField.gridy = 2;
         searchPanel.add(queryField, gbc_queryField);
@@ -126,7 +126,7 @@ public class ClientView implements Runnable {
         GridBagConstraints gbc_queryButton = new GridBagConstraints();
         gbc_queryButton.fill = GridBagConstraints.HORIZONTAL;
         gbc_queryButton.gridheight = 1;
-        gbc_queryButton.insets = new Insets(0, 0, 0, 5);
+        gbc_queryButton.insets = new Insets(0, 0, 5, 5);
         gbc_queryButton.gridx = 2;
         gbc_queryButton.gridy = 2;
         searchPanel.add(queryButton, gbc_queryButton);
@@ -273,7 +273,22 @@ public class ClientView implements Runnable {
         // Put panels together on the frame
      	JTabbedPane tp = new JTabbedPane();   
      	tp.add("Search", searchPanel);
+     	
+     	JButton randomButton = new JButton("Feeling lucky?");
+     	GridBagConstraints gbc_randomButton = new GridBagConstraints();
+     	gbc_randomButton.fill = GridBagConstraints.HORIZONTAL;
+     	gbc_randomButton.gridwidth = 2;
+     	gbc_randomButton.insets = new Insets(0, 0, 5, 5);
+     	gbc_randomButton.gridx = 1;
+     	gbc_randomButton.gridy = 5;
+     	searchPanel.add(randomButton, gbc_randomButton);
      	tp.add("Edit", editPanel);
+     	randomButton.addActionListener(new ActionListener() {
+        	public void actionPerformed(ActionEvent arg0) {
+        		System.out.println("Requested new random word!");
+        		client.getRandom();
+        	}
+        });
      	
      	GridBagConstraints gbc_tp = new GridBagConstraints();
      	gbc_tp.fill = GridBagConstraints.BOTH;

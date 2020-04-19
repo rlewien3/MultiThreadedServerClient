@@ -22,6 +22,7 @@ public class Client implements Runnable {
 	private static final String QUERY = "GET ";
 	private static final String ADD = "PUT ";
 	private static final String REMOVE = "DEL ";
+	private static final String RANDOM = "RDM"; // to ask for a random word
 	private static final String SEPARATOR = "~~~"; // to separate two arguments in an add query
 	// server side
 	private static final String ERROR = "ERR";
@@ -105,6 +106,13 @@ public class Client implements Runnable {
     }
     
     /**
+     * Returns a random word from the dictionary
+     */
+    public void getRandom() {
+    	send(RANDOM);
+    }
+    
+    /**
      * Helper functions
      */
     private boolean isEmpty(String word) {
@@ -133,6 +141,7 @@ public class Client implements Runnable {
     	clientRunning = true;
     	connectToServer();
         readMessages();
+        getRandom(); // get word of the day
     }
     
     /**
@@ -140,7 +149,7 @@ public class Client implements Runnable {
      */
     private void connectToServer() {
     	
-    	// get the ip
+    	// get the IP
     	try {
 			ip = InetAddress.getByName(ipAddress);
 		} catch (UnknownHostException e) {
@@ -216,7 +225,7 @@ public class Client implements Runnable {
         	List<Result> results = JSON.parseArray(content, Result.class);
         	view.showResults(results);
         	view.resetToaster();
-        } 
+        }
         
         else {
         	view.showResponse("Unhandled response! " + message); // delete out later??????
