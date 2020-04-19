@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import common.Result;
 
 /**
- * Worker thread for a multithreaded server
+ * Worker thread for a multithreaded dictionary server
  * Created by Ryan Lewien
  * 746528
  * For Distributed Systems (COMP90015)
@@ -26,7 +26,7 @@ import common.Result;
  */
 class WorkerRunnable implements Runnable { 
     
-	// Communication protocol
+	// Communication Protocol
 	// client side
 	private static final String QUERY = "GET";
 	private static final String ADD = "PUT";
@@ -45,20 +45,16 @@ class WorkerRunnable implements Runnable {
     
     private Server server;
       
-    // constructor 
     public WorkerRunnable(Socket clientSocket, Server server) { 
         
     	this.server = server;
-    	
-    	System.out.println("Creating a new handler for this client..."); 
         
     	// obtain input and output streams 
 		try {
     		input = new DataInputStream(clientSocket.getInputStream()); 
             output = new DataOutputStream(clientSocket.getOutputStream()); 
     	} catch (IOException ioe) {
-    		System.out.println("Exception found on opening client input and output streams. Ignoring."); 
-            ioe.printStackTrace(); 
+            System.out.println("clientSocket closed.");
     	}
     }
   
@@ -66,17 +62,14 @@ class WorkerRunnable implements Runnable {
     public void run() { 
   
     	while (true) {
-	    	System.out.println("New worker running!");
 	        String received; 
 	
 	        // receive the string 
 	    	try { 
 	            received = input.readUTF(); 
-	            System.out.println("Received: " + received);
 	    	
-	         // close the worker input and output if unable to receive
+	        // close the worker input and output if unable to receive
 	    	} catch (IOException se) {
-	    		System.out.println("Closing worker. ");
 	        	try {
 					input.close();
 					output.close();
@@ -125,7 +118,6 @@ class WorkerRunnable implements Runnable {
 	        try {
 				output.writeUTF(reply);
 			} catch (IOException e) {
-				System.out.println("Failed to write to output stream. Ignoring. ");
 				e.printStackTrace();
 			}
     	}
@@ -137,8 +129,10 @@ class WorkerRunnable implements Runnable {
      * 
      *************************************************************************************************/
     
+    /**
+     * Asks the dictionary for the definition of a queried word
+     */
     private String queryWord(String word) {
-    	System.out.println("Looking for " + word + " in dictionary...");
     	
     	String result = server.getResultString(word);
     	
@@ -150,17 +144,15 @@ class WorkerRunnable implements Runnable {
     	}
     }
     
+    /**
+     * Adds a word to the dictionary, if it isn't in the dictionary already
+     */
     private String addWord(String message) {
     	String[] splitMessage = message.split(SEPARATOR, 2);
     	
     	if (splitMessage.length == 2) {
     		String word = splitMessage[0];
             String definition = splitMessage[1];
-            
-            System.out.println("word: " + word);
-            System.out.println("definition: " + definition);
-        	
-            // inputting multiple definitions at once?
     		
             // wrap definition into an array of results to put in dictionary
     		Result newResult = new Result();
@@ -180,6 +172,9 @@ class WorkerRunnable implements Runnable {
     	}
     }
     
+    /**
+     * Removes a word from the dictionary, if it's in the dictionary
+     */
     private String removeWord(String word) {
     	
     	boolean success = server.removeWord(word);
@@ -191,11 +186,12 @@ class WorkerRunnable implements Runnable {
     	}
     }
     
+    /**
+     * Gets a random word and definition from the dictionary
+     */
     private String randomWord() {
-    	
-    	System.out.println("Getting random word!");
-    	
-    	// Keep getting random words to make sure the result is there
+
+    	// Keep getting random words to make sure the result hasn't been deleted
     	String result = null;
     	String word = null;
     	while (result == null) {
@@ -204,7 +200,6 @@ class WorkerRunnable implements Runnable {
     	}
     	
     	String response = RDM_RESPONSE + word + SEPARATOR + result;
-    	System.out.println(response);
     	
     	return response;
     }

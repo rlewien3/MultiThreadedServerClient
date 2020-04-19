@@ -8,6 +8,7 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import javax.swing.JFrame;
 
@@ -20,7 +21,7 @@ import client.ClientView;
 import common.Result; 
   
 /**
- * Multithreaded server
+ * Multithreaded server for a dictionary client
  * Created by Ryan Lewien
  * 746528
  * For Distributed Systems (COMP90015)
@@ -33,13 +34,13 @@ public class Server implements Runnable {
 	private String dictLocation;
 	private int port;
 	
-	private ExecutorService workerThreads = Executors.newFixedThreadPool(poolSize);
+	private ExecutorService workerThreads;
 	private Thread acceptClients;
 	
 	private boolean serverRunning;
 	
 	private ServerSocket serverSocket = null;
-	private Socket clientSocket;
+	private ArrayList<Socket> clientSockets;
 	private ConcurrentHashMap<String, List<Result>> dictionary;
 	private ServerView view;
 	
@@ -52,15 +53,18 @@ public class Server implements Runnable {
     
     public static void main(String[] args) throws IOException { 
 
-    	System.out.println("SERVER\n");
     	Server server = new Server();
     	server.run();
     }
     
+    @Override
+    public void run() {
+    	view.run();
+    }
     
     /**************************************************************************************************
      * 
-     * 										 Public Methods
+     * 									Called from Server View
      * 
      *************************************************************************************************/
     
@@ -74,12 +78,6 @@ public class Server implements Runnable {
     
     public void setDictLocation(String dictLocation) {
     	this.dictLocation = dictLocation;
-    }
-    
-    
-    @Override
-    public void run() {
-    	view.run();
     }
     
     /**
@@ -100,6 +98,8 @@ public class Server implements Runnable {
         	return;
         }
         
+        workerThreads = Executors.newFixedThreadPool(poolSize);
+        
     	if (openServerSocket()) {
     		// Server socket is open!
     		serverRunning = true;
@@ -107,6 +107,13 @@ public class Server implements Runnable {
     		view.showRunning();
     	};
     }
+    
+    
+    /**************************************************************************************************
+     * 
+     * 									  Public Server Methods
+     * 
+     *************************************************************************************************/
     
     /**
      * Gets a result from the dictionary as a string, if it is in the dictionary
@@ -169,21 +176,25 @@ public class Server implements Runnable {
      * @return 
      */
     public synchronized void stopServer() {
-    	if (serverRunning) {
-    		try {
+		
+    	workerThreads.shutdown();
+    	
+    	// Close all client sockets
+		for (Socket clientSocket : clientSockets) {
+			try {
 				clientSocket.close();
 			} catch (IOException | NullPointerException e) {
 				view.showError("Error closing client");
 			}
-    		
-    		try {
-        		serverSocket.close();
-        	} catch (IOException | NullPointerException e) {
-        		view.showError("Error closing server");
-        	}
-    		serverRunning = false;
-    		workerThreads.shutdownNow();
+		}
+
+		try {
+    		serverSocket.close();
+    	} catch (IOException | NullPointerException e) {
+    		view.showError("Error closing server");
     	}
+		serverRunning = false;
+    	
     	view.showError("Server stopped.");
     }
     
@@ -261,6 +272,7 @@ public class Server implements Runnable {
      */
     private void delegateRequests() {
 
+    	clientSockets = new ArrayList<Socket>();
     	Server server = this;
     	acceptClients = new Thread() {
     		
@@ -268,19 +280,18 @@ public class Server implements Runnable {
     	    public void run() { 
 
     	        while (isRunning()) {
-    	            try { 
+    	            
+    	        	Socket newClientSocket;
+    	        	try { 
     	            	// Accept the incoming request 
-    		            clientSocket = serverSocket.accept();
-    		            System.out.println("New client request received: " + clientSocket);  
-    	            } catch (SocketException e){ 
-    	                Thread.currentThread().interrupt();
-    	                System.out.println("Thread was interrupted, Failed to complete operation");
+    		            newClientSocket = serverSocket.accept();
+    		            clientSockets.add(newClientSocket);
+    		            
+    		            // Create a new handler object for handling this request.
+        	            workerThreads.execute(new WorkerRunnable(newClientSocket, server));
     	            } catch (IOException ioe) {
     	        		System.out.println("Exception found on accept. Ignoring.");
     	        	}
-    	            
-    	            // Create a new handler object for handling this request.
-    	            workerThreads.execute(new WorkerRunnable(clientSocket, server));
     	         } 
     	    }
     	};

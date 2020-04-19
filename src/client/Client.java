@@ -9,7 +9,7 @@ import com.alibaba.fastjson.JSON;
 import common.Result; 
  
 /**
- * Multithreaded client
+ * Multithreaded dictionary client
  * Created by Ryan Lewien
  * 746528
  * For Distributed Systems (COMP90015)
@@ -42,11 +42,11 @@ public class Client implements Runnable {
     private int port;
     private String ipAddress;
 	
+    
 	public Client(int port, String ipAddress) {
 		
 		this.port = port;
 		this.ipAddress = ipAddress;
-
 		view = new ClientView(this);
     }
 	
@@ -58,7 +58,6 @@ public class Client implements Runnable {
     	Client client = new Client(port, ipAddress);
     	
     	// Start Client behaviour
-    	System.out.println("CLIENT\nOn port: " + port + "\n");
     	client.run();
     }
     

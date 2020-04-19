@@ -14,24 +14,31 @@ import com.bulenkov.darcula.DarculaLaf;
 import java.awt.Color;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.text.NumberFormat;
 
+/**
+ * Swing GUI for a multi-threaded dictionary server.
+ * Created by Ryan Lewien
+ * 746528
+ * For Distributed Systems (COMP90015)
+ * The University of Melbourne
+ */
 public class ServerView implements Runnable {
 
 	private final String DEFAULT_TOAST = "Pocket Dictionary Server";
 	private final Color TOAST_BACKGROUND = new Color(45, 49, 50);
-	
+	private Server server;
+
 	private JFrame frame;
+	
+	private JButton powerButton;
+	private JTextField portField;
+	private JLabel portLabel;
+	private JLabel dictPathLabel;
+	private JTextField dictPathField;
 	
 	private JPanel toast;
 	private JLabel toastLabel;
 	
-	private Server server;
-	private JButton powerButton;
-	private JFormattedTextField portField;
-	private JLabel portLabel;
-	private JLabel dictPathLabel;
-	private JTextField dictPathField;
 
 	/**
 	 * Create the application.
@@ -74,9 +81,7 @@ public class ServerView implements Runnable {
      	gridBagLayout.rowWeights = new double[]{1.0, 0.0, Double.MIN_VALUE};
      	frame.getContentPane().setLayout(gridBagLayout);
      	
-     	// Toast panel at bottom
-     	toast = new JPanel();
-     	
+     	// Main panel
      	JPanel panel = new JPanel();
      	GridBagConstraints gbc_panel = new GridBagConstraints();
      	gbc_panel.insets = new Insets(0, 0, 5, 0);
@@ -91,15 +96,16 @@ public class ServerView implements Runnable {
      	gbl_panel.rowWeights = new double[]{4.0, 0.0, 0.0, 1.0, 0.0, 4.0, Double.MIN_VALUE};
      	panel.setLayout(gbl_panel);
      	
-     	portLabel = new JLabel("Port");
-     	GridBagConstraints gbc_portLabel = new GridBagConstraints();
-     	gbc_portLabel.anchor = GridBagConstraints.SOUTHWEST;
-     	gbc_portLabel.insets = new Insets(0, 0, 5, 5);
-     	gbc_portLabel.gridx = 1;
-     	gbc_portLabel.gridy = 1;
-     	panel.add(portLabel, gbc_portLabel);
      	
+     	// Power Button
      	powerButton = new JButton("Start Server");
+     	GridBagConstraints gbc_powerButton = new GridBagConstraints();
+     	gbc_powerButton.gridheight = 4;
+     	gbc_powerButton.insets = new Insets(0, 0, 5, 5);
+     	gbc_powerButton.fill = GridBagConstraints.BOTH;
+     	gbc_powerButton.gridx = 2;
+     	gbc_powerButton.gridy = 1;
+     	panel.add(powerButton, gbc_powerButton);
      	powerButton.addActionListener(new ActionListener() {
      		public void actionPerformed(ActionEvent arg0) {
      			
@@ -118,19 +124,19 @@ public class ServerView implements Runnable {
      		}
      	});
      	
+     	// Port Label
+     	portLabel = new JLabel("Port");
+     	GridBagConstraints gbc_portLabel = new GridBagConstraints();
+     	gbc_portLabel.anchor = GridBagConstraints.SOUTHWEST;
+     	gbc_portLabel.insets = new Insets(0, 0, 5, 5);
+     	gbc_portLabel.gridx = 1;
+     	gbc_portLabel.gridy = 1;
+     	panel.add(portLabel, gbc_portLabel);
      	
-     	GridBagConstraints gbc_powerButton = new GridBagConstraints();
-     	gbc_powerButton.gridheight = 4;
-     	gbc_powerButton.insets = new Insets(0, 0, 5, 5);
-     	gbc_powerButton.fill = GridBagConstraints.BOTH;
-     	gbc_powerButton.gridx = 2;
-     	gbc_powerButton.gridy = 1;
-     	panel.add(powerButton, gbc_powerButton);
-     	
-     	// port is a number
-     	portField = new JFormattedTextField();
+
+     	// Port Field
+     	portField = new JTextField();
      	portField.setText("3784");
-     	
      	GridBagConstraints gbc_portField = new GridBagConstraints();
      	gbc_portField.insets = new Insets(0, 0, 5, 5);
      	gbc_portField.fill = GridBagConstraints.HORIZONTAL;
@@ -139,6 +145,7 @@ public class ServerView implements Runnable {
      	panel.add(portField, gbc_portField);
      	portField.setColumns(10);
      	
+     	// Dictionary Path Label
      	dictPathLabel = new JLabel("Dictionary Path");
      	GridBagConstraints gbc_dictPathLabel = new GridBagConstraints();
      	gbc_dictPathLabel.anchor = GridBagConstraints.SOUTHWEST;
@@ -147,6 +154,7 @@ public class ServerView implements Runnable {
      	gbc_dictPathLabel.gridy = 3;
      	panel.add(dictPathLabel, gbc_dictPathLabel);
      	
+     	// Dictionary Path Field
      	dictPathField = new JTextField();
      	dictPathField.setText("C:\\Users\\rlewi\\Documents\\MultiThreadedServerClient\\src\\server\\data.json");
      	GridBagConstraints gbc_dictPathField = new GridBagConstraints();
@@ -158,6 +166,9 @@ public class ServerView implements Runnable {
      	panel.add(dictPathField, gbc_dictPathField);
      	dictPathField.setColumns(10);
      	
+     	
+     	// Toast panel at bottom
+     	toast = new JPanel();
      	GridBagConstraints gbc_toast = new GridBagConstraints();
      	gbc_toast.fill = GridBagConstraints.BOTH;
      	gbc_toast.gridx = 0;
@@ -173,7 +184,7 @@ public class ServerView implements Runnable {
         gbc_toastLabel.gridy = 0;
         toast.add(toastLabel, gbc_toastLabel);
         
-        // Close properly
+        // Make sure close properly
         frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         frame.addWindowListener(new WindowAdapter() {
             @Override
@@ -209,11 +220,9 @@ public class ServerView implements Runnable {
         toastLabel.setText(message);
 	}
 	
-	public void resetToaster() {
-		toast.setBackground(TOAST_BACKGROUND);
-        toastLabel.setText(DEFAULT_TOAST);
-	}
-	
+	/**
+	 * Shows that the server is running
+	 */
 	public void showRunning() {
 		powerButton.setText("Stop Server");
 		portField.setEditable(false);
