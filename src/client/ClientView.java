@@ -24,6 +24,8 @@ import com.bulenkov.darcula.DarculaLaf;
 import server.Result;
 import java.awt.Font;
 import java.awt.Color;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class ClientView implements Runnable {
 
@@ -247,6 +249,7 @@ public class ClientView implements Runnable {
         		System.out.println("Add button clicked!");
         		client.addWord(addField.getText(), descriptionField.getText());
         		addField.setText("");
+        		descriptionField.setText("");
         	}
         });
         
@@ -317,6 +320,13 @@ public class ClientView implements Runnable {
      	
      	// Toast panel at bottom
      	toast = new JPanel();
+     	toast.addMouseListener(new MouseAdapter() {
+     		@Override
+     		public void mouseClicked(MouseEvent arg0) {
+     			client.reconnectServer();
+     			System.out.println("Toast clicked");
+     		}
+     	});
      	GridBagConstraints gbc_toast = new GridBagConstraints();
      	gbc_toast.fill = GridBagConstraints.BOTH;
      	gbc_toast.gridx = 0;
@@ -348,14 +358,6 @@ public class ClientView implements Runnable {
 	public void showSuccess(String success) {
 		toast.setBackground(new Color(51, 135, 96));
         toastLabel.setText(success);
-	}
-	
-	/**
-	 * Shows a response in the GUI's toast area DELETE IN FINAL
-	 */
-	public void showResponse(String response) {
-		toast.setBackground(TOAST_BACKGROUND);
-        toastLabel.setText(response);
 	}
 	
 	public void resetToaster() {

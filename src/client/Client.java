@@ -82,10 +82,10 @@ public class Client implements Runnable {
     public void addWord(String word, String definition) {
     	
     	if (isEmpty(word)) {
-    		view.showError("You didn't pop a word in.");
+    		view.showError("You didn't pop a term in.");
     		return;
     	} else if (isEmpty(definition)) {
-    		view.showError("You need to write what the word means as well.");
+    		view.showError("What does \"" + word + "\" mean? You need a definition as well.");
     		return;
     	}
     	
@@ -131,8 +131,9 @@ public class Client implements Runnable {
             // clean up the query
         	output.writeUTF(msg.trim()); 
         } catch (IOException e) { 
-            view.showError("Error trying to send to the server! Try again in a second. ");
-        	e.printStackTrace(); 
+            view.showError("Error trying to send to the server! Click here to try again ");
+            clientRunning = false;
+        	return;
         }
     }
     
@@ -154,16 +155,18 @@ public class Client implements Runnable {
     	try {
 			ip = InetAddress.getByName(ipAddress);
 		} catch (UnknownHostException e) {
-			view.showError("IP Address not found.");
-			e.printStackTrace();
+			view.showError("IP Address not found. Click here to try again!");
+			clientRunning = false;
+			return;
 		}
         
         // connect to server if it's started
         try {
         	socket = new Socket(ip, port);
         } catch (IOException ce) {
-        	view.showError("Server wasn't found at port number: " + port + ". Try a different port number!");
-        	ce.printStackTrace();
+        	view.showError("Server wasn't found at port number: " + port + ". Click here to try again!");
+        	clientRunning = false;
+        	return;
         }
         
         // obtain input and output streams
@@ -171,9 +174,29 @@ public class Client implements Runnable {
 			input = new DataInputStream(socket.getInputStream());
 			output = new DataOutputStream(socket.getOutputStream());
 		} catch (IOException e) {
-			view.showError("Unable to connect to input and output streams.");
-			e.printStackTrace();
+			view.showError("Unable to connect to input and output streams. Click here to try again!");
+			clientRunning = false;
+			return;
 		}
+        
+        clientRunning = true;
+    }
+    
+    /**
+     *  Attempts to reconnect to the server, starting the client's connections
+     */
+    public void reconnectServer() {
+    	if (clientRunning == false) {
+    		
+    		System.out.println("Reconnecting to server");
+    		connectToServer();
+    		readMessages();
+            getRandom();
+            
+            if (clientRunning) {
+            	view.showSuccess("Reconnected to server!");
+            }
+    	}
     }
     
     /**
@@ -185,20 +208,17 @@ public class Client implements Runnable {
         	@Override
             public void run() { 
                 while (isRunning()) {
-                    try { 
+                    try {
                         // read the message sent to this client 
                         String msg = input.readUTF();
                         System.out.println("Response from Server: " + msg);
                         directMessage(msg);
-                    } catch (SocketException se) {
-                    	view.showError("Server is no available. Click to try again.");
+                    } catch (IOException e) {
+                    	view.showError("Server is not available. Click to try again.");
+                    	clientRunning = false;
                     	break;
-                	} catch (IOException e) {
-                        e.printStackTrace(); 
-                    } 
+                    }
                 } 
-                
-                //stop();
             }
         });
         
@@ -224,6 +244,8 @@ public class Client implements Runnable {
         
         else if (command.equals(QUERY_RESPONSE) | command.equals(RDM_RESPONSE)) {
         	
+        	System.out.println("New query received!");
+        	
         	// separate out original word
         	String[] splitContent = content.split(SEPARATOR, 2);
         	String word = splitContent[0];
@@ -238,10 +260,6 @@ public class Client implements Runnable {
         		view.showResults(word, results, false);
         	}
         	view.resetToaster();
-        }
-        
-        else {
-        	view.showResponse("Unhandled response! " + message); // delete out later??????
         }
     }
     

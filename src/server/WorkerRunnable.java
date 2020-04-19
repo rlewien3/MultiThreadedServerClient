@@ -195,6 +195,9 @@ class WorkerRunnable implements Runnable {
     		result = server.getResultString(word);
     	}
     	
-    	return RDM_RESPONSE + word + SEPARATOR + result;
+    	String response = RDM_RESPONSE + word + SEPARATOR + result;
+    	System.out.println(response);
+    	
+    	return response;
     }
 }
