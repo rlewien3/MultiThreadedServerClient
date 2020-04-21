@@ -56,6 +56,7 @@ public class ClientView implements Runnable {
 	
 	private JPanel toast;
 	private JLabel toastLabel;
+	private boolean toastIsClickable;
 	
 	private Client client;
 	private JTextField portField;
@@ -231,7 +232,7 @@ public class ClientView implements Runnable {
         
         // Add word field label
         JLabel addTermLabel = new JLabel("Term");
-        addTermLabel.setFont(new Font("Tahoma", Font.PLAIN, 12));
+        addTermLabel.setFont(new Font("Tahoma", Font.PLAIN, 11));
         GridBagConstraints gbc_addTermLabel = new GridBagConstraints();
         gbc_addTermLabel.gridwidth = 2;
         gbc_addTermLabel.insets = new Insets(0, 0, 5, 5);
@@ -251,7 +252,7 @@ public class ClientView implements Runnable {
         
         // Add definition field label
         JLabel addDefinitionLabel = new JLabel("Definition");
-        addDefinitionLabel.setFont(new Font("Tahoma", Font.PLAIN, 12));
+        addDefinitionLabel.setFont(new Font("Tahoma", Font.PLAIN, 11));
         GridBagConstraints gbc_addDefinitionLabel = new GridBagConstraints();
         gbc_addDefinitionLabel.insets = new Insets(0, 0, 5, 5);
         gbc_addDefinitionLabel.anchor = GridBagConstraints.NORTHWEST;
@@ -321,38 +322,6 @@ public class ClientView implements Runnable {
         		removeField.setText("");
         	}
         });
-                
-
-        
-     	// Toast panel at bottom
-     	toast = new JPanel();
-     	toast.addMouseListener(new MouseAdapter() {
-     		@Override
-     		public void mouseClicked(MouseEvent arg0) {
-     			client.reconnectServer();
-     		}
-     	});
-     	GridBagConstraints gbc_toast = new GridBagConstraints();
-     	gbc_toast.fill = GridBagConstraints.BOTH;
-     	gbc_toast.gridx = 0;
-     	gbc_toast.gridy = 1;
-     	toast.setBackground(new Color(41, 43, 45));
-     	frame.getContentPane().add(toast, gbc_toast);
-     	
-     	// Toast label
-        toastLabel = new JLabel(DEFAULT_TOAST);
-        GridBagConstraints gbc_toastLabel = new GridBagConstraints();
-        gbc_toastLabel.insets = new Insets(0, 0, 5, 5);
-        gbc_toastLabel.gridx = 0;
-        gbc_toastLabel.gridy = 0;
-        toast.add(toastLabel, gbc_toastLabel);
-        
-        
-        
-        // Put panels together on the frame
-     	JTabbedPane tp = new JTabbedPane();   
-     	tp.add("Search", searchPanel);
-     	tp.add("Edit", editPanel);
      	
      	// Advanced Features Panel
      	JPanel advFeaturesPanel = new JPanel();
@@ -424,7 +393,6 @@ public class ClientView implements Runnable {
      	gbc_tp.fill = GridBagConstraints.BOTH;
      	gbc_tp.gridx = 0;
      	gbc_tp.gridy = 0;
-     	frame.getContentPane().add(tp, gbc_tp);
      	
      	// Advanced Features Submit Button
      	JButton portSubmitButton = new JButton("Update");
@@ -442,12 +410,44 @@ public class ClientView implements Runnable {
         		client.updateConnection(ipField.getText(), portField.getText());
         	}
         });
-
+     	
+     	// Toast panel at bottom
+     	toast = new JPanel();
+     	GridBagConstraints gbc_toast = new GridBagConstraints();
+     	gbc_toast.fill = GridBagConstraints.BOTH;
+     	gbc_toast.gridx = 0;
+     	gbc_toast.gridy = 1;
+     	toast.setBackground(new Color(41, 43, 45));
+     	frame.getContentPane().add(toast, gbc_toast);
+     	toast.addMouseListener(new MouseAdapter() {
+     		// Reconnect client at the same address if no longer connected to server
+     		@Override
+     		public void mouseClicked(MouseEvent arg0) {
+     			if (toastIsClickable) {
+     				client.updateConnection(client.getIPAddress(), ((Integer) client.getPort()).toString());
+     			}
+     		}
+     	});
+     	
+     	// Toast label
+        toastLabel = new JLabel(DEFAULT_TOAST);
+        GridBagConstraints gbc_toastLabel = new GridBagConstraints();
+        gbc_toastLabel.insets = new Insets(0, 0, 5, 5);
+        gbc_toastLabel.gridx = 0;
+        gbc_toastLabel.gridy = 0;
+        toast.add(toastLabel, gbc_toastLabel);
+     	
+     	
+     	// Put panels together on the frame
+     	JTabbedPane tp = new JTabbedPane();   
+     	tp.add("Search", searchPanel);
+     	tp.add("Edit", editPanel);
+     	frame.getContentPane().add(tp, gbc_tp);
 	}
 
 	/**************************************************************************************************
      * 
-     * 									  	Helper Methods
+     * 									  	Public Methods
      * 
      *************************************************************************************************/
 	
@@ -457,7 +457,18 @@ public class ClientView implements Runnable {
 	public void showError(String error) {
 		toast.setBackground(new Color(148, 41, 41));
         toastLabel.setText(error);
+        toastIsClickable = false;
 	}
+	
+	/**
+	 * Shows a clickable fatal error in the GUI's toast area
+	 */
+	public void showFatalConnectionError(String ipAddress, int port) {
+		toast.setBackground(new Color(148, 41, 41));
+        toastLabel.setText("Connection error! Click here to refresh, or change connection in Advanced Features.");
+        toastIsClickable = true;
+	}
+	
 	
 	/**
 	 * Shows a success message in the GUI's toast area
@@ -465,6 +476,8 @@ public class ClientView implements Runnable {
 	public void showSuccess(String success) {
 		toast.setBackground(new Color(51, 135, 96));
         toastLabel.setText(success);
+        toastIsClickable = false;
+        refreshAdvFeatFields();
 	}
 	
 	/**
@@ -473,6 +486,8 @@ public class ClientView implements Runnable {
 	public void resetToaster() {
 		toast.setBackground(TOAST_BACKGROUND);
         toastLabel.setText(DEFAULT_TOAST);
+        toastIsClickable = false;
+        refreshAdvFeatFields();
 	}
 	
 	/**
@@ -574,6 +589,12 @@ public class ClientView implements Runnable {
 		updateTextPane(s, styles);
     }
 	
+	/**************************************************************************************************
+     * 
+     * 									  	Helper Methods
+     * 
+     *************************************************************************************************/
+	
 	
 	/**
 	 * Updates the search result text pane
@@ -598,6 +619,14 @@ public class ClientView implements Runnable {
 	}
 	
 	/**
+	 * Updates the IP Address and Port fields in the Advanced Features to match the client's
+	 */
+	private void refreshAdvFeatFields() {
+		ipField.setText(client.getIPAddress());
+		portField.setText(((Integer) client.getPort()).toString());
+	}
+	
+	/**
 	 * Concatenates an array of strings together into one string
 	 */
 	private String collectStrings(List<String> strings) {
@@ -614,7 +643,7 @@ public class ClientView implements Runnable {
 	}
 	
 	/**
-	 * Capitalises a string
+	 * Capitalises the first letter of a string
 	 */
 	private String capitalise(String str) {
 	    if(str == null || str.isEmpty()) {

@@ -32,7 +32,6 @@ public class Client implements Runnable {
 	
 	private ClientView view;
 	
-    private InetAddress ip = null;
     private Socket socket = null;
     private boolean clientRunning = false;
     
@@ -53,8 +52,21 @@ public class Client implements Runnable {
   
     public static void main(String args[]) throws UnknownHostException, IOException { 
     	
-    	final String ipAddress = "192.168.0.208";
-    	final int port = 3784;
+    	// default ip and port
+    	String ipAddress = "192.168.0.200";
+		int port = 3000;
+    	
+		// parse both combinations of arguments
+    	if (args.length == 2) {
+    		
+    		if (validateIPAddress(args[0]) & isInteger(args[1])) {
+    			ipAddress = args[0];
+    			port = Integer.parseInt(args[1]);
+    		} else if (validateIPAddress(args[1]) & isInteger(args[0])) {
+    			ipAddress = args[1];
+    			port = Integer.parseInt(args[0]);
+    		}
+    	}
     	
     	Client client = new Client(ipAddress, port);
     	client.run();
@@ -63,9 +75,7 @@ public class Client implements Runnable {
     @Override
     public void run() {
     	view.run();
-    	clientRunning = true;
-    	connectToServer();
-        readMessages();
+    	connectToServer(ipAddress, port);
         getRandom(); // get word of the day
     }
     
@@ -113,7 +123,6 @@ public class Client implements Runnable {
     		return;
     	}
     	
-    	System.out.println("Deleting word from server:" + word);
     	send(REMOVE + word);
     }
     
@@ -123,51 +132,42 @@ public class Client implements Runnable {
     public void getRandom() {
     	send(RANDOM);
     }
-    
+
     /**
-     *  Attempts to reconnect to the server, starting the client's connections
-     */
-    public void reconnectServer() {
-    	if (clientRunning == false) {
-    		
-    		System.out.println("Reconnecting to server");
-    		connectToServer();
-    		readMessages();
-            getRandom();
-            
-            if (clientRunning) {
-            	view.showSuccess("Reconnected to server!");
-            }
-    	}
-    }
-    
-    /**
-     * Sets the client's port and IP Address, and reconnects it at the new port and IP
+     * Attempts to reconnect the client at the specified IP Address and port
      */
     public void updateConnection(String newIPAddress, String portText) {
     	
-    	int newPort;
+    	// Stop the client running
+    	clientRunning = false;
+    	
+    	int parsedPort;
     	try {
-    		newPort = Integer.parseInt(portText);
+    		parsedPort = Integer.parseInt(portText);
     	} catch (NumberFormatException e) {
-    		newPort = -1;
+    		parsedPort = -1;
     	}
+    	final int newPort = parsedPort;
     	
-    	// Make sure new IpAddress
-    	 {
-    		
-    	}
-    	
-    	// Make sure new port is valid
+    	// Make sure new port and IP are valid
     	if (newPort > 0) {
-    		
-    		// Make sure IP is valid
     		if (validateIPAddress(newIPAddress)) {
-    			this.port = newPort;
-    			this.ipAddress = newIPAddress;
-        		clientRunning = false;
-        		reconnectServer();
-    		} else { 
+    			
+    			// Reconnect using the new IP and port, on new thread so connecting doesn't block
+    			view.showError("Connecting...");
+    			Thread reconnecting = new Thread() {
+    				
+    				@Override
+    				public void run() {
+    					connectToServer(newIPAddress, newPort);
+    		            if (isRunning()) {
+    		            	view.showSuccess("Reconnected to server!");
+    		            }
+    				}
+    			};
+    			reconnecting.start();
+    			
+    		} else {
     			view.showError("Invalid IP Address! It must be in IPv4 address format.");
         	}
     	} else {
@@ -194,9 +194,11 @@ public class Client implements Runnable {
      * Stops the client
      */
     public synchronized void stopClient() {
-    	if (clientRunning) {
+    	if (isRunning()) {
     		clientRunning = false;
         	try {
+        		input.close();
+        		output.close();
         		socket.close();
         	} catch (IOException | NullPointerException e) {
         		view.showError("Error closing client");
@@ -220,52 +222,61 @@ public class Client implements Runnable {
             // clean up the query
         	output.writeUTF(msg.trim());
         } catch (IOException | NullPointerException e) { 
-            view.showError("Error connecting at IP: " + ipAddress + ", port: " + port + ". Click here to try again!");
+        	view.showFatalConnectionError(ipAddress, port);
             clientRunning = false;
         	return;
         }
     }
     
     /**
-     * Connects the client to the server
+     * Connects the client to the server, returns true if it succeeds
      */
-    private void connectToServer() {
+	private void connectToServer(String newIPAddress, int newPort) {
     	
     	// Check port is valid
-    	if (port <= 0) {
-        	view.showError("Port number is invalid! Try another.");
-        	return;
+    	if (newPort <= 0) {
+	    	view.showError("Port number is invalid! Try another.");
+    		return;
         }
     	
     	// get the IP
+    	InetAddress ip;
     	try {
-			ip = InetAddress.getByName(ipAddress);
+    		ip = InetAddress.getByName(newIPAddress);
 		} catch (UnknownHostException e) {
 			view.showError("IP Address not found. Change in the Advanced Features panel!");
-			clientRunning = false;
 			return;
 		}
         
         // connect to server if it's started
-        try {
-        	socket = new Socket(ip, port);
+        Socket newSocket = null;
+    	try {
+        	newSocket = new Socket(ip, newPort);
         } catch (IOException ce) {
-        	view.showError("Error connecting at IP: " + ipAddress + ", port: " + port + ". Click here to try again!");
-        	clientRunning = false;
+        	view.showFatalConnectionError(newIPAddress, newPort);
         	return;
         }
         
         // obtain input and output streams
-        try {
-			input = new DataInputStream(socket.getInputStream());
-			output = new DataOutputStream(socket.getOutputStream());
-		} catch (IOException e) {
-			view.showError("Unable to connect to input and output streams. Click here to try again!");
-			clientRunning = false;
+        DataInputStream newInput = null;
+        DataOutputStream newOutput = null;
+    	try {
+			newInput = new DataInputStream(newSocket.getInputStream());
+			newOutput = new DataOutputStream(newSocket.getOutputStream());
+		} catch (IOException | NullPointerException ne) {
+			view.showFatalConnectionError(newIPAddress, newPort);
 			return;
 		}
         
+        // Success! Update internal variables
+    	this.input = newInput;
+    	this.output = newOutput;
+        this.socket = newSocket;
+        this.port = newPort;
+		this.ipAddress = newIPAddress;
         clientRunning = true;
+    	readMessages();
+        return;
     }
     
     /**
@@ -280,10 +291,9 @@ public class Client implements Runnable {
                     try {
                         // read the message sent to this client 
                         String msg = input.readUTF();
-                        System.out.println("Response from Server: " + msg);
                         directMessage(msg);
-                    } catch (IOException e) {
-                    	view.showError("Error connecting at IP: " + ipAddress + ", port: " + port + ". Click here to try again!");
+                    } catch (IOException | NullPointerException e) {
+                    	view.showFatalConnectionError(ipAddress, port);
                     	clientRunning = false;
                     	break;
                     }
@@ -338,9 +348,19 @@ public class Client implements Runnable {
      * Validates an IP address form
      * Courtesy of Stackoverflow user Samthebest: https://stackoverflow.com/Questions/5667371/validate-ipv4-address-in-java
      */
-    private boolean validateIPAddress(String ip) {
+    private static boolean validateIPAddress(String address) {
         String pattern = "^((0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?)\\.){3}(0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?)$";
 
-        return ip.matches(pattern);
+        return address.matches(pattern);
+    }
+    
+    private static boolean isInteger(String input) {
+	    try {
+	        Integer.parseInt( input );
+	        return true;
+	    }
+	    catch( NumberFormatException e ) {
+	        return false;
+	    }
     }
 }
