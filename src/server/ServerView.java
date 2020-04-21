@@ -136,7 +136,7 @@ public class ServerView implements Runnable {
 
      	// Port Field
      	portField = new JTextField();
-     	portField.setText("3784");
+     	portField.setText("3000");
      	GridBagConstraints gbc_portField = new GridBagConstraints();
      	gbc_portField.insets = new Insets(0, 0, 5, 5);
      	gbc_portField.fill = GridBagConstraints.HORIZONTAL;
@@ -156,7 +156,7 @@ public class ServerView implements Runnable {
      	
      	// Dictionary Path Field
      	dictPathField = new JTextField();
-     	dictPathField.setText("C:\\Users\\rlewi\\Documents\\MultiThreadedServerClient\\src\\server\\data.json");
+     	dictPathField.setText("C:\\server\\data.json");
      	GridBagConstraints gbc_dictPathField = new GridBagConstraints();
      	gbc_dictPathField.anchor = GridBagConstraints.SOUTH;
      	gbc_dictPathField.insets = new Insets(0, 0, 5, 5);

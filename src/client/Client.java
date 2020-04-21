@@ -161,7 +161,7 @@ public class Client implements Runnable {
     				public void run() {
     					connectToServer(newIPAddress, newPort);
     		            if (isRunning()) {
-    		            	view.showSuccess("Reconnected to server!");
+    		            	view.showSuccess("Connected to server!");
     		            }
     				}
     			};
