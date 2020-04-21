@@ -40,11 +40,12 @@ public class Client implements Runnable {
     private DataOutputStream output;
     
     private int port;
-    private String ipAddress = "127.0.0.1";
+    private String ipAddress;
 	
     
-	public Client(int port) {
+	public Client(String ipAddress, int port) {
 		
+		this.ipAddress = ipAddress;
 		this.port = port;
 		view = new ClientView(this);
     }
@@ -52,9 +53,10 @@ public class Client implements Runnable {
   
     public static void main(String args[]) throws UnknownHostException, IOException { 
     	
+    	final String ipAddress = "192.168.0.208";
     	final int port = 3784;
     	
-    	Client client = new Client(port);
+    	Client client = new Client(ipAddress, port);
     	client.run();
     }
     
@@ -82,8 +84,7 @@ public class Client implements Runnable {
     		view.showError("Make sure you search for *something*, you dingus!");
     		return;
     	}
-    	
-    	System.out.println("Sending query to server:" + query);
+
     	send(QUERY + query);
     }
     
@@ -100,7 +101,6 @@ public class Client implements Runnable {
     		return;
     	}
     	
-    	System.out.println("Sending new word to server:" + word + ": " + definition);
     	send(ADD + word.replace("~", "") + SEPARATOR + definition);
     }
     
@@ -142,9 +142,9 @@ public class Client implements Runnable {
     }
     
     /**
-     * Sets the client's port and reconnects it at the new port
+     * Sets the client's port and IP Address, and reconnects it at the new port and IP
      */
-    public void updatePort(String portText) {
+    public void updateConnection(String newIPAddress, String portText) {
     	
     	int newPort;
     	try {
@@ -153,11 +153,23 @@ public class Client implements Runnable {
     		newPort = -1;
     	}
     	
+    	// Make sure new IpAddress
+    	 {
+    		
+    	}
+    	
     	// Make sure new port is valid
     	if (newPort > 0) {
-    		this.port = newPort;
-    		clientRunning = false;
-    		reconnectServer();
+    		
+    		// Make sure IP is valid
+    		if (validateIPAddress(newIPAddress)) {
+    			this.port = newPort;
+    			this.ipAddress = newIPAddress;
+        		clientRunning = false;
+        		reconnectServer();
+    		} else { 
+    			view.showError("Invalid IP Address! It must be in IPv4 address format.");
+        	}
     	} else {
     		view.showError("Invalid Port! It must be a number greater than 0.");
     	}
@@ -165,6 +177,10 @@ public class Client implements Runnable {
     
     public int getPort() {
     	return port;
+    }
+    
+    public String getIPAddress() {
+    	return ipAddress;
     }
     
     /**
@@ -204,7 +220,7 @@ public class Client implements Runnable {
             // clean up the query
         	output.writeUTF(msg.trim());
         } catch (IOException | NullPointerException e) { 
-            view.showError("Error trying to send to the server! Click here to try again ");
+            view.showError("Error connecting at IP: " + ipAddress + ", port: " + port + ". Click here to try again!");
             clientRunning = false;
         	return;
         }
@@ -225,7 +241,7 @@ public class Client implements Runnable {
     	try {
 			ip = InetAddress.getByName(ipAddress);
 		} catch (UnknownHostException e) {
-			view.showError("IP Address not found. Click here to try again!");
+			view.showError("IP Address not found. Change in the Advanced Features panel!");
 			clientRunning = false;
 			return;
 		}
@@ -234,7 +250,7 @@ public class Client implements Runnable {
         try {
         	socket = new Socket(ip, port);
         } catch (IOException ce) {
-        	view.showError("Server wasn't found at port number " + port + ". Click here to try again!");
+        	view.showError("Error connecting at IP: " + ipAddress + ", port: " + port + ". Click here to try again!");
         	clientRunning = false;
         	return;
         }
@@ -267,7 +283,7 @@ public class Client implements Runnable {
                         System.out.println("Response from Server: " + msg);
                         directMessage(msg);
                     } catch (IOException e) {
-                    	view.showError("Server is not available. Click to try again.");
+                    	view.showError("Error connecting at IP: " + ipAddress + ", port: " + port + ". Click here to try again!");
                     	clientRunning = false;
                     	break;
                     }
@@ -297,8 +313,6 @@ public class Client implements Runnable {
         
         else if (command.equals(QUERY_RESPONSE) | command.equals(RDM_RESPONSE)) {
         	
-        	System.out.println("New query received!");
-        	
         	// separate out original word
         	String[] splitContent = content.split(SEPARATOR, 2);
         	String word = splitContent[0];
@@ -318,5 +332,15 @@ public class Client implements Runnable {
     
     private boolean isEmpty(String word) {
     	return word.equals("");
+    }
+    
+    /**
+     * Validates an IP address form
+     * Courtesy of Stackoverflow user Samthebest: https://stackoverflow.com/Questions/5667371/validate-ipv4-address-in-java
+     */
+    private boolean validateIPAddress(String ip) {
+        String pattern = "^((0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?)\\.){3}(0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?)$";
+
+        return ip.matches(pattern);
     }
 }

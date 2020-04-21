@@ -26,7 +26,6 @@ import common.Result;
 public class Server implements Runnable { 
    
 	private final int poolSize = 200;
-	private final String ipAddress = "127.0.0.1";
 	private String dictLocation;
 	private int port;
 	
@@ -229,23 +228,14 @@ public class Server implements Runnable {
     
     
     /**
-     * Opens the server socket at a specified port and ip address
+     * Opens the server socket at a specified port
      * Returns whether it succeeds
      */
     private boolean openServerSocket() {
     	
-    	// Get ip address
-    	InetAddress ip = null;
-		try {
-			ip = InetAddress.getByName(ipAddress);
-		} catch (UnknownHostException e) {
-			view.showError("IPAddress not allowed.");
-			return false;
-		}
-    	
     	// create server socket if port isn't used
     	try {
-        	serverSocket = new ServerSocket(port, 100, ip); 
+        	serverSocket = new ServerSocket(port, 100); 
         } catch (BindException be) {
         	view.showError("Port is already being used.");
         	return false;

@@ -59,6 +59,7 @@ public class ClientView implements Runnable {
 	
 	private Client client;
 	private JTextField portField;
+	private JTextField ipField;
 
 	/**
 	 * Create the application.
@@ -170,7 +171,6 @@ public class ClientView implements Runnable {
         panel.add(queryButton, gbc_queryButton);
         queryButton.addActionListener(new ActionListener() {
         	public void actionPerformed(ActionEvent arg0) {
-        		System.out.println("Query button clicked!");
         		client.sendQuery(queryField.getText());
         		queryField.setText("");
         	}
@@ -203,7 +203,6 @@ public class ClientView implements Runnable {
      	searchPanel.add(randomButton, gbc_randomButton);
      	randomButton.addActionListener(new ActionListener() {
         	public void actionPerformed(ActionEvent arg0) {
-        		System.out.println("Requested new random word!");
         		client.getRandom();
         	}
         });
@@ -214,8 +213,8 @@ public class ClientView implements Runnable {
         JPanel editPanel = new JPanel();
         GridBagLayout gbl_editPanel = new GridBagLayout();
         gbl_editPanel.columnWidths = new int[]{30, 179, 0, 25, 0};
-        gbl_editPanel.rowHeights = new int[]{20, 0, 0, 22, 0, 50, 15, 0, 22, 20, 30, 0};
-        gbl_editPanel.columnWeights = new double[]{1.0, 1.0, 0.0, 0.0, Double.MIN_VALUE};
+        gbl_editPanel.rowHeights = new int[]{20, 0, 0, 22, 0, 50, 15, 0, 22, 20, 45, 0};
+        gbl_editPanel.columnWeights = new double[]{0.0, 1.0, 0.0, 0.0, Double.MIN_VALUE};
         gbl_editPanel.rowWeights = new double[]{2.0, 0.0, 0.0, 0.0, 0.0, 4.0, 1.0, 0.0, 0.0, 2.0, 0.0, Double.MIN_VALUE};
         editPanel.setLayout(gbl_editPanel);
         
@@ -281,7 +280,6 @@ public class ClientView implements Runnable {
         editPanel.add(addButton, gbc_addButton);
         addButton.addActionListener(new ActionListener() {
         	public void actionPerformed(ActionEvent arg0) {
-        		System.out.println("Add button clicked!");
         		client.addWord(addField.getText(), descriptionField.getText());
         		addField.setText("");
         		descriptionField.setText("");
@@ -319,7 +317,6 @@ public class ClientView implements Runnable {
         editPanel.add(removeButton, gbc_removeButton);
         removeButton.addActionListener(new ActionListener() {
         	public void actionPerformed(ActionEvent arg0) {
-        		System.out.println("Remove button clicked!");
         		client.removeWord(removeField.getText());
         		removeField.setText("");
         	}
@@ -368,9 +365,9 @@ public class ClientView implements Runnable {
      	editPanel.add(advFeaturesPanel, gbc_advFeaturesPanel);
      	GridBagLayout gbl_advFeaturesPanel = new GridBagLayout();
      	gbl_advFeaturesPanel.columnWidths = new int[]{30, 0, 0, 0, 25, 0};
-     	gbl_advFeaturesPanel.rowHeights = new int[]{20, 0, 0, 15, 0};
-     	gbl_advFeaturesPanel.columnWeights = new double[]{0.0, 0.0, 4.0, 0.0, 0.0, Double.MIN_VALUE};
-     	gbl_advFeaturesPanel.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
+     	gbl_advFeaturesPanel.rowHeights = new int[]{20, 0, 0, 0, 15, 0};
+     	gbl_advFeaturesPanel.columnWeights = new double[]{0.0, 0.0, 1.0, 0.0, 0.0, Double.MIN_VALUE};
+     	gbl_advFeaturesPanel.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
      	advFeaturesPanel.setLayout(gbl_advFeaturesPanel);
      	
      	// Advanced Features Title
@@ -384,13 +381,33 @@ public class ClientView implements Runnable {
      	gbc_advFeaturesTitle.gridy = 1;
      	advFeaturesPanel.add(advFeaturesTitle, gbc_advFeaturesTitle);
      	
+     	// IP Address Label
+     	JLabel ipLabel = new JLabel("IP Address");
+     	GridBagConstraints gbc_ipLabel = new GridBagConstraints();
+     	gbc_ipLabel.anchor = GridBagConstraints.EAST;
+     	gbc_ipLabel.insets = new Insets(0, 0, 5, 5);
+     	gbc_ipLabel.gridx = 1;
+     	gbc_ipLabel.gridy = 2;
+     	advFeaturesPanel.add(ipLabel, gbc_ipLabel);
+     	
+     	// IP Address Field
+     	ipField = new JTextField();
+     	ipField.setText(client.getIPAddress()); // show current IP address
+     	GridBagConstraints gbc_ipField = new GridBagConstraints();
+     	gbc_ipField.insets = new Insets(0, 0, 5, 5);
+     	gbc_ipField.fill = GridBagConstraints.HORIZONTAL;
+     	gbc_ipField.gridx = 2;
+     	gbc_ipField.gridy = 2;
+     	advFeaturesPanel.add(ipField, gbc_ipField);
+     	ipField.setColumns(10);
+     	
      	// Port Label
      	JLabel portLabel = new JLabel("Port");
      	GridBagConstraints gbc_portLabel = new GridBagConstraints();
      	gbc_portLabel.anchor = GridBagConstraints.EAST;
      	gbc_portLabel.insets = new Insets(0, 0, 5, 5);
      	gbc_portLabel.gridx = 1;
-     	gbc_portLabel.gridy = 2;
+     	gbc_portLabel.gridy = 3;
      	advFeaturesPanel.add(portLabel, gbc_portLabel);
      	
      	// Port Field
@@ -400,28 +417,32 @@ public class ClientView implements Runnable {
      	gbc_portField.insets = new Insets(0, 0, 5, 5);
      	gbc_portField.fill = GridBagConstraints.HORIZONTAL;
      	gbc_portField.gridx = 2;
-     	gbc_portField.gridy = 2;
+     	gbc_portField.gridy = 3;
      	advFeaturesPanel.add(portField, gbc_portField);
      	portField.setColumns(10);
-     	
-     	// Port Submit Button
-     	JButton portSubmitButton = new JButton("Set Port");
-     	portSubmitButton.setBackground(DARK_BACKGROUND);
-     	GridBagConstraints gbc_portSubmitButton = new GridBagConstraints();
-     	gbc_portSubmitButton.insets = new Insets(0, 0, 5, 5);
-     	gbc_portSubmitButton.gridx = 3;
-     	gbc_portSubmitButton.gridy = 2;
-     	advFeaturesPanel.add(portSubmitButton, gbc_portSubmitButton);
      	GridBagConstraints gbc_tp = new GridBagConstraints();
      	gbc_tp.fill = GridBagConstraints.BOTH;
      	gbc_tp.gridx = 0;
      	gbc_tp.gridy = 0;
      	frame.getContentPane().add(tp, gbc_tp);
+     	
+     	// Advanced Features Submit Button
+     	JButton portSubmitButton = new JButton("Update");
+     	portSubmitButton.setBackground(DARK_BACKGROUND);
+     	GridBagConstraints gbc_portSubmitButton = new GridBagConstraints();
+     	gbc_portSubmitButton.fill = GridBagConstraints.VERTICAL;
+     	gbc_portSubmitButton.gridheight = 2;
+     	gbc_portSubmitButton.insets = new Insets(0, 0, 5, 5);
+     	gbc_portSubmitButton.gridx = 3;
+     	gbc_portSubmitButton.gridy = 2;
+     	advFeaturesPanel.add(portSubmitButton, gbc_portSubmitButton);
      	portSubmitButton.addActionListener(new ActionListener() {
         	public void actionPerformed(ActionEvent arg0) {
-        		client.updatePort(portField.getText());
+        		showError("Connecting...");
+        		client.updateConnection(ipField.getText(), portField.getText());
         	}
         });
+
 	}
 
 	/**************************************************************************************************
